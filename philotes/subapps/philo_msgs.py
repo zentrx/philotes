@@ -62,11 +62,117 @@ class PhiloMsgsApp:
         self.web_view.connect("load-failed", self._on_load_failed)
         self.web_view.connect("web-process-terminated", self._on_web_process_terminated)
 
+        GLib.timeout_add_seconds(2, self._poll_dom_timer)
+
         self.load_google_msgs()
 
     def load_google_msgs(self):
         print(f"philo-msgs: loading {GOOGLE_MSGS_URL}", flush=True)
         self.web_view.load_uri(GOOGLE_MSGS_URL)
+
+    def _poll_dom_timer(self):
+        self._evaluate_dom_title()
+        return True
+
+    def _evaluate_dom_title(self):
+        js_code = """
+        (function() {
+            // 1. Check title inside active conversation header (top of right pane)
+            let headerCandidates = document.querySelectorAll(
+                'div.title-container, ' +
+                'div.title, ' +
+                '.title-container, ' +
+                'mws-conversation-header .title, ' +
+                'mws-conversation-header h1, ' +
+                'mws-conversation-header [role="heading"], ' +
+                'mws-conversation-header-container [role="heading"], ' +
+                '[data-test-id="conversation-title"], ' +
+                '.conversation-title, ' +
+                'header [role="heading"], ' +
+                'mws-conversation-header'
+            );
+            for (let el of headerCandidates) {
+                let txt = (el.innerText || el.textContent || '').trim();
+                if (txt) {
+                    let firstLine = txt.split('\\n')[0].trim();
+                    if (firstLine && firstLine.length < 80) {
+                        let lower = firstLine.toLowerCase();
+                        if (!lower.includes('google messages') &&
+                            !lower.includes('messages for web') &&
+                            !lower.includes('conversations') &&
+                            !lower.includes('start chat') &&
+                            !lower.includes('sign in') &&
+                            !lower.includes('search') &&
+                            !lower.includes('details')) {
+                            return firstLine;
+                        }
+                    }
+                }
+            }
+
+            // 2. Check active/selected conversation item in left conversation list
+            let selectedItem = document.querySelector(
+                'mws-conversation-list-item[selected], ' +
+                'mws-conversation-list-item[aria-selected="true"], ' +
+                'mws-conversation-list-item.selected, ' +
+                '[role="option"][aria-selected="true"], ' +
+                '[role="listitem"][aria-selected="true"]'
+            );
+            if (selectedItem) {
+                let nameEl = selectedItem.querySelector('.name, .title, h2, h3, [role="heading"], span');
+                let txt = nameEl ? nameEl.innerText : selectedItem.innerText;
+                if (txt) {
+                    let firstLine = txt.trim().split('\\n')[0].trim();
+                    if (firstLine && firstLine.length < 80) {
+                        let lower = firstLine.toLowerCase();
+                        if (!lower.includes('google messages') && !lower.includes('conversations')) {
+                            return firstLine;
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: inspect any heading in main conversation pane
+            let mainPane = document.querySelector('mws-conversation-container, [role="main"]');
+            if (mainPane) {
+                let headings = mainPane.querySelectorAll('h1, h2, h3, [role="heading"]');
+                for (let h of headings) {
+                    let txt = (h.innerText || h.textContent || '').trim();
+                    if (txt) {
+                        let line = txt.split('\\n')[0].trim();
+                        let lower = line.toLowerCase();
+                        if (line.length < 80 && !lower.includes('google messages') && !lower.includes('conversations')) {
+                            return line;
+                        }
+                    }
+                }
+            }
+
+            return "";
+        })();
+        """
+        try:
+            self.web_view.evaluate_javascript(js_code, -1, None, None, None, self._on_dom_title_evaluated, None)
+        except Exception as e:
+            pass
+
+    def _on_dom_title_evaluated(self, web_view, result, user_data):
+        try:
+            js_val = web_view.evaluate_javascript_finish(result)
+            if js_val:
+                title_text = js_val.to_string()
+                clean = self._parse_selected_title(title_text)
+                if clean != self.selected_title:
+                    self.selected_title = clean
+                    print(f"philo-msgs: active conversation title updated -> '{self.selected_title}'", flush=True)
+                    self._send_ipc_msg({
+                        "type": "status_update",
+                        "app": "msgs",
+                        "count": self.unread_count,
+                        "title": self.selected_title,
+                    })
+        except Exception as e:
+            print(f"philo-msgs: DOM title evaluation error: {e}", flush=True)
 
     def _on_web_process_terminated(self, web_view, reason):
         print("philo-msgs: ----------------------------------------", flush=True)
@@ -92,16 +198,30 @@ class PhiloMsgsApp:
         if not raw_title:
             return None
         clean = re.sub(r"^\(\d+\)\s*", "", raw_title).strip()
-        if clean.endswith(" - Messages for web"):
-            clean = clean[:-19].strip()
-        elif clean.endswith(" - Messages"):
-            clean = clean[:-11].strip()
-        elif clean.startswith("Messages - "):
-            clean = clean[11:].strip()
-        elif clean.endswith(" - Google Messages"):
-            clean = clean[:-18].strip()
+        for suffix in [
+            " - Google Messages for web: Conversations",
+            ": Conversations",
+            " - Google Messages for web",
+            " - Messages for web",
+            " - Messages",
+            " - Google Messages",
+        ]:
+            if clean.endswith(suffix):
+                clean = clean[:-len(suffix)].strip()
+                break
 
-        if clean in ("Messages", "Messages for web", "Google Messages", "Sign in - Google Accounts", "Accounts"):
+        generic = {
+            "messages",
+            "messages for web",
+            "google messages",
+            "google messages for web",
+            "google messages for web: conversations",
+            "conversations",
+            "start chat",
+            "sign in - google accounts",
+            "accounts",
+        }
+        if clean.lower() in generic:
             return None
         return clean if clean else None
 
@@ -112,12 +232,18 @@ class PhiloMsgsApp:
 
         match = re.search(r"^\((\d+)\)", title)
         new_count = int(match.group(1)) if match else 0
-        new_title = self._parse_selected_title(title)
+        parsed_title = self._parse_selected_title(title)
 
-        if new_count != self.unread_count or new_title != self.selected_title:
+        count_changed = (new_count != self.unread_count)
+        if count_changed:
             self.unread_count = new_count
-            self.selected_title = new_title
-            print(f"philo-msgs: status updated (unread={self.unread_count}, title='{self.selected_title}')", flush=True)
+
+        if parsed_title and parsed_title != self.selected_title:
+            self.selected_title = parsed_title
+            count_changed = True
+
+        if count_changed:
+            print(f"philo-msgs: status updated via title notification (unread={self.unread_count}, title='{self.selected_title}')", flush=True)
             self._send_ipc_msg({
                 "type": "status_update",
                 "app": "msgs",

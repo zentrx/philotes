@@ -138,6 +138,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.stack.set_hexpand(True)
         self.stack.set_vexpand(True)
         root_vbox.append(self.stack)
+        self.set_child(root_vbox)
 
         self._init_chat_view()
         self._init_msgs_view()
