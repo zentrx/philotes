@@ -5,7 +5,7 @@ APP_NAME = "philotes"
 SUBAPP_CHAT_NAME = "philo-chat"
 SUBAPP_MSGS_NAME = "philo-msgs"
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 CONFIG_DIR = Path(os.path.expanduser("~/.config/philotes"))
 CACHE_DIR = Path(os.path.expanduser("~/.cache/philotes"))
