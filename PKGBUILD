@@ -1,6 +1,6 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=2.1.0
+pkgver=2.1.1
 pkgrel=1
 pkgdesc="Linux-first communication application container designed to run continuously on Arch Linux"
 arch=('any')
@@ -32,6 +32,7 @@ package() {
 
     # Desktop Launcher
     install -Dm644 philotes.desktop "${pkgdir}/usr/share/applications/philotes.desktop"
+    install -Dm644 com.philotes.app.desktop "${pkgdir}/usr/share/applications/com.philotes.app.desktop"
 
     # Icons (System & /opt/philotes)
     install -Dm644 icons/hicolor/philotes.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/philotes.svg"
