@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v2.0.0)
+# Philotes Implementation Document (v2.0.2)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
@@ -78,9 +78,9 @@ Version **2.0.0** represents the two primary active communication sub-applicatio
   - **Inactive/Unselected Tab**: Displays greyscale icon (`icons/greyscale/<app>.svg`), hides text label, and overlays unread badge directly over the top-right corner of the icon using `Gtk.Overlay`.
 
 ### 2.6 Arch Linux Pacman Packaging
-- **`pkg/PKGBUILD`**: Complete Arch Linux PKGBUILD script specifying runtime dependencies (`python`, `python-gobject`, `webkitgtk-6.0`, `gtk4`, `hicolor-icon-theme`) and build dependencies (`python-setuptools`, `python-build`, `python-installer`, `python-wheel`).
-- **`pkg/install.sh`**: One-step script executing `makepkg -ef -si --noconfirm` to compile wheel packages and install via pacman.
-- **`pkg/philotes.desktop`**: Desktop entry launcher integration for Arch desktop environments (Rofi, dmenu, Hyprland, KDE, GNOME).
+- **`PKGBUILD`**: Complete Arch Linux PKGBUILD script specifying runtime dependencies (`python`, `python-gobject`, `webkitgtk-6.0`, `gtk4`, `hicolor-icon-theme`) and build dependencies (`python-setuptools`, `python-build`, `python-installer`, `python-wheel`).
+- **`install.sh`**: One-step script executing `makepkg -ef -si --noconfirm` to compile wheel packages and install via pacman.
+- **`philotes.desktop`**: Desktop entry launcher integration for Arch desktop environments (Rofi, dmenu, Hyprland, KDE, GNOME).
 
 ---
 

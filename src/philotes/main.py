@@ -14,6 +14,8 @@ from philotes.config import (
     ICON_GREYSCALE_CHAT,
     ICON_HICOLOR_MSGS,
     ICON_GREYSCALE_MSGS,
+    ICON_HICOLOR_PHILOTES,
+    ICON_GREYSCALE_PHILOTES,
     THEME_CSS_PATH,
 )
 from philotes.subapps.philo_chat import PhiloChatApp
@@ -38,6 +40,8 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         self.unread_chat_count = 0
         self.unread_msgs_count = 0
+        self.chat_selected_title = None
+        self.msgs_selected_title = None
 
         self._load_theme()
 
@@ -50,7 +54,6 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         # Left Tab Bar
         self.tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.tabs_box.set_hexpand(True)
 
         # Chat Tab Button
         self.chat_tab_button = Gtk.Button()
@@ -112,6 +115,13 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         self.top_bar.append(self.tabs_box)
 
+        # Center Header Title Label
+        self.header_title_label = Gtk.Label(label="Philotes")
+        self.header_title_label.add_css_class("header-title-label")
+        self.header_title_label.set_halign(Gtk.Align.CENTER)
+        self.header_title_label.set_hexpand(True)
+        self.top_bar.append(self.header_title_label)
+
         # Right Settings Button
         self.settings_button = Gtk.Button()
         self.settings_button.set_name("settings-button")
@@ -143,6 +153,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         
         self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
+        self._update_header_title()
 
     def _init_chat_view(self):
         active_card = AccountManager.get_instance().get_active_card("google")
@@ -194,10 +205,15 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_tab_ui()
 
     def _load_theme(self):
+        display = Gdk.Display.get_default()
+        if display:
+            icon_theme = Gtk.IconTheme.get_for_display(display)
+            if ICON_HICOLOR_PHILOTES.parent.exists():
+                icon_theme.add_search_path(str(ICON_HICOLOR_PHILOTES.parent))
+
         css_provider = Gtk.CssProvider()
         if THEME_CSS_PATH.exists():
             css_provider.load_from_path(str(THEME_CSS_PATH))
-            display = Gdk.Display.get_default()
             if display:
                 Gtk.StyleContext.add_provider_for_display(
                     display,
@@ -217,13 +233,26 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                     if not line:
                         continue
                     msg = json.loads(line)
-                    if msg.get("type") == "unread_count":
-                        app_name = msg.get("app")
-                        if app_name == "msgs":
-                            self.unread_msgs_count = msg.get("count", 0)
-                        else:
-                            self.unread_chat_count = msg.get("count", 0)
+                    msg_type = msg.get("type")
+                    app_name = msg.get("app")
+
+                    if msg_type in ("unread_count", "status_update", "title_update"):
+                        if "count" in msg:
+                            count = msg.get("count", 0)
+                            if app_name == "msgs":
+                                self.unread_msgs_count = count
+                            else:
+                                self.unread_chat_count = count
+
+                        if "title" in msg:
+                            title = msg.get("title")
+                            if app_name == "msgs":
+                                self.msgs_selected_title = title
+                            else:
+                                self.chat_selected_title = title
+
                         GLib.idle_add(self._update_tab_ui)
+                        GLib.idle_add(self._update_header_title)
             except Exception as e:
                 sys.stderr.write(f"[Philotes] IPC read parse error: {e}\n")
         return True
@@ -232,16 +261,42 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.current_tab = "chat"
         self.stack.set_visible_child_name("chat")
         self._update_tab_ui()
+        self._update_header_title()
 
     def _on_msgs_tab_clicked(self, widget):
         self.current_tab = "msgs"
         self.stack.set_visible_child_name("msgs")
         self._update_tab_ui()
+        self._update_header_title()
 
     def _on_settings_tab_clicked(self, widget=None):
         self.current_tab = "settings"
         self.stack.set_visible_child_name("settings")
         self._update_tab_ui()
+        self._update_header_title()
+
+    def _update_header_title(self):
+        if self.current_tab == "chat":
+            tab_name = "Chat"
+            selected_title = self.chat_selected_title
+        elif self.current_tab == "msgs":
+            tab_name = "Messages"
+            selected_title = self.msgs_selected_title
+        elif self.current_tab == "settings":
+            tab_name = "Settings"
+            selected_title = None
+        else:
+            tab_name = self.current_tab.capitalize()
+            selected_title = None
+
+        if selected_title:
+            full_title = f"Philotes | {tab_name} | {selected_title}"
+        else:
+            full_title = f"Philotes | {tab_name}"
+
+        self.set_title(full_title)
+        if hasattr(self, "header_title_label") and self.header_title_label:
+            self.header_title_label.set_text(full_title)
 
     def _update_tab_ui(self):
         # Chat tab styling
@@ -308,11 +363,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                 self.msgs_overlay_badge.add_css_class("badge-hidden")
                 self.msgs_overlay_badge.set_visible(False)
 
-    def _set_image_from_svg(self, gtk_image, svg_path):
+    def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=20):
         if svg_path.exists():
             try:
                 gtk_image.set_from_file(str(svg_path))
-                gtk_image.set_pixel_size(20)
+                gtk_image.set_pixel_size(pixel_size)
             except Exception as e:
                 sys.stderr.write(f"[Philotes] Error loading SVG {svg_path}: {e}\n")
 

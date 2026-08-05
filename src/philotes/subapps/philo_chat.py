@@ -22,6 +22,7 @@ class PhiloChatApp:
         self.profile_id = profile_id
         self.username = username
         self.unread_count = 0
+        self.selected_title = None
 
         print(f"philo-chat: initializing (profile={profile_id}, user={username})", flush=True)
 
@@ -84,18 +85,42 @@ class PhiloChatApp:
             web_view.load_uri(uri)
         return None
 
+    def _parse_selected_title(self, raw_title):
+        if not raw_title:
+            return None
+        clean = re.sub(r"^\(\d+\)\s*", "", raw_title).strip()
+        if clean.endswith(" - Google Chat"):
+            clean = clean[:-14].strip()
+        elif clean.startswith("Google Chat - "):
+            clean = clean[14:].strip()
+        elif clean.endswith(" - Chat"):
+            clean = clean[:-7].strip()
+        elif clean.startswith("Chat - "):
+            clean = clean[7:].strip()
+
+        if clean in ("Google Chat", "Google", "Chat", "Sign in - Google Accounts", "Accounts"):
+            return None
+        return clean if clean else None
+
     def _on_title_changed(self, web_view, param):
         title = web_view.get_title()
         if not title:
             return
-        
+
         match = re.search(r"^\((\d+)\)", title)
         new_count = int(match.group(1)) if match else 0
+        new_title = self._parse_selected_title(title)
 
-        if new_count != self.unread_count:
+        if new_count != self.unread_count or new_title != self.selected_title:
             self.unread_count = new_count
-            print(f"philo-chat: unread count changed to {self.unread_count}", flush=True)
-            self._send_ipc_msg({"type": "unread_count", "app": "chat", "count": self.unread_count})
+            self.selected_title = new_title
+            print(f"philo-chat: status updated (unread={self.unread_count}, title='{self.selected_title}')", flush=True)
+            self._send_ipc_msg({
+                "type": "status_update",
+                "app": "chat",
+                "count": self.unread_count,
+                "title": self.selected_title,
+            })
 
     def _send_ipc_msg(self, msg_dict):
         if self.ipc_write_fd is not None:

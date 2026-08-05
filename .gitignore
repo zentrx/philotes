@@ -10,8 +10,8 @@ build/
 # Arch Linux packaging build artifacts
 *.pkg.tar.zst
 *.pkg.tar.xz
-pkg/pkg/
-pkg/src/
+/pkg/
+
 
 # User credentials & local tokens (DO NOT COMMIT)
 gcp_tokens.json
@@ -23,6 +23,8 @@ client_secret.json
 *.swp
 *~
 
-# Local Agent Customizations (DO NOT COMMIT)
+# Local Agent Customizations & Backups (DO NOT COMMIT)
 .agents/
+backups/
+
 

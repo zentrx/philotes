@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="philotes",
-    version="2.0.0",
+    version="2.0.2",
 
 
     description="Linux-First Communication Application Container",

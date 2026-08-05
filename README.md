@@ -1,4 +1,4 @@
-# Philotes (v2.0.0)
+# Philotes (v2.0.2)
 
 **Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular communication sub-applications: **Google Chat** (`philo-chat`) and **Google Messages** (`philo-msgs`).
 
@@ -17,7 +17,7 @@
 - **GCP OAuth 2.0 PKCE Authorization**:
   - Permanent refresh token rotation for background Google service integrations.
 - **Arch Linux Native Packaging**:
-  - Complete `PKGBUILD` and `pkg/install.sh` for pacman installation.
+  - Complete `PKGBUILD` and `install.sh` for pacman installation.
 
 ---
 
@@ -27,7 +27,7 @@
 ```bash
 git clone https://github.com/zentrx/philotes.git
 cd philotes
-./pkg/install.sh
+./install.sh
 ```
 
 ### Local Development / PyPI Setup
