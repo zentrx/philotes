@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "philotes"
+version = "0.3.0"
+
+
+description = "Linux-First Communication Application Container"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "PyGObject>=3.40.0",
+]
+
+[project.scripts]
+philotes = "philotes.main:main"
+philo-chat = "philotes.subapps.philo_chat:run_philo_chat_subprocess"
