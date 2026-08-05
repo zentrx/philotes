@@ -12,10 +12,15 @@ from philotes.config import (
     APP_NAME,
     ICON_HICOLOR_CHAT,
     ICON_GREYSCALE_CHAT,
+    ICON_HICOLOR_MSGS,
+    ICON_GREYSCALE_MSGS,
     THEME_CSS_PATH,
 )
 from philotes.subapps.philo_chat import PhiloChatApp
-from philotes.auth import GCPAuthManager
+from philotes.subapps.philo_msgs import PhiloMsgsApp
+from philotes.account_manager import AccountManager
+from philotes.views.settings_view import SettingsView
+from philotes.components.splash_view import SplashView
 
 
 class PhilotesWindow(Gtk.ApplicationWindow):
@@ -24,8 +29,15 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         set_process_name(APP_NAME)
         self.set_default_size(1150, 750)
 
-        self.current_tab = "chat"
+        total_cards = AccountManager.get_instance().get_total_card_count()
+        # Rule: If no Auth Cards present, bring user to Settings tab on launch
+        if total_cards == 0:
+            self.current_tab = "settings"
+        else:
+            self.current_tab = "chat"
+
         self.unread_chat_count = 0
+        self.unread_msgs_count = 0
 
         self._load_theme()
 
@@ -40,11 +52,22 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.tabs_box.set_hexpand(True)
 
+        # Chat Tab Button
         self.chat_tab_button = Gtk.Button()
         self.chat_tab_button.connect("clicked", self._on_chat_tab_clicked)
         
         self.chat_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.chat_overlay = Gtk.Overlay()
         self.chat_icon_img = Gtk.Image()
+        self.chat_overlay.set_child(self.chat_icon_img)
+
+        self.chat_overlay_badge = Gtk.Label(label="")
+        self.chat_overlay_badge.add_css_class("badge")
+        self.chat_overlay_badge.add_css_class("badge-overlay")
+        self.chat_overlay_badge.set_halign(Gtk.Align.END)
+        self.chat_overlay_badge.set_valign(Gtk.Align.START)
+        self.chat_overlay.add_overlay(self.chat_overlay_badge)
+
         self.chat_label = Gtk.Label(label="Chat")
         self.chat_label.add_css_class("tab-label")
 
@@ -52,12 +75,41 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.chat_badge.add_css_class("badge")
         self.chat_badge.add_css_class("badge-hidden")
 
-        self.chat_tab_box.append(self.chat_icon_img)
+        self.chat_tab_box.append(self.chat_overlay)
         self.chat_tab_box.append(self.chat_label)
         self.chat_tab_box.append(self.chat_badge)
         self.chat_tab_button.set_child(self.chat_tab_box)
-
         self.tabs_box.append(self.chat_tab_button)
+
+        # Messages Tab Button
+        self.msgs_tab_button = Gtk.Button()
+        self.msgs_tab_button.connect("clicked", self._on_msgs_tab_clicked)
+
+        self.msgs_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.msgs_overlay = Gtk.Overlay()
+        self.msgs_icon_img = Gtk.Image()
+        self.msgs_overlay.set_child(self.msgs_icon_img)
+
+        self.msgs_overlay_badge = Gtk.Label(label="")
+        self.msgs_overlay_badge.add_css_class("badge")
+        self.msgs_overlay_badge.add_css_class("badge-overlay")
+        self.msgs_overlay_badge.set_halign(Gtk.Align.END)
+        self.msgs_overlay_badge.set_valign(Gtk.Align.START)
+        self.msgs_overlay.add_overlay(self.msgs_overlay_badge)
+
+        self.msgs_label = Gtk.Label(label="Messages")
+        self.msgs_label.add_css_class("tab-label")
+
+        self.msgs_badge = Gtk.Label(label="")
+        self.msgs_badge.add_css_class("badge")
+        self.msgs_badge.add_css_class("badge-hidden")
+
+        self.msgs_tab_box.append(self.msgs_overlay)
+        self.msgs_tab_box.append(self.msgs_label)
+        self.msgs_tab_box.append(self.msgs_badge)
+        self.msgs_tab_button.set_child(self.msgs_tab_box)
+        self.tabs_box.append(self.msgs_tab_button)
+
         self.top_bar.append(self.tabs_box)
 
         # Right Settings Button
@@ -83,49 +135,63 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.stack.set_vexpand(True)
         root_vbox.append(self.stack)
 
-        self._init_philo_chat()
+        self._init_chat_view()
+        self._init_msgs_view()
 
-        # Settings View
-        self.settings_view = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        self.settings_view.set_name("settings-view")
-        self.settings_view.set_valign(Gtk.Align.CENTER)
-        self.settings_view.set_halign(Gtk.Align.CENTER)
-        
-        settings_title = Gtk.Label()
-        settings_title.set_markup("<span size='x-large' weight='bold'>Philotes Settings &amp; Authorization</span>")
-        
-        self.auth_manager = GCPAuthManager()
-        self.auth_status_label = Gtk.Label()
-        self._update_auth_status_label()
-
-        self.login_btn = Gtk.Button(label="Sign in with Google (GCP OAuth)")
-        self.login_btn.connect("clicked", self._on_login_clicked)
-
-        self.settings_view.append(settings_title)
-        self.settings_view.append(self.auth_status_label)
-        self.settings_view.append(self.login_btn)
-        
+        self.settings_view = SettingsView(on_accounts_changed_cb=self._on_accounts_changed)
         self.stack.add_named(self.settings_view, "settings")
+        
+        self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
 
-    def _update_auth_status_label(self):
-        if self.auth_manager.is_authenticated():
-            self.auth_status_label.set_markup("<span color='#7aa2f7' weight='bold'>Status: Authenticated (Permanent Token Saved)</span>")
-        elif self.auth_manager.is_configured():
-            self.auth_status_label.set_markup("<span color='#e0af68'>Status: GCP Credentials Loaded. Ready for Sign-In.</span>")
-        else:
-            self.auth_status_label.set_markup("<span color='#f7768e'>Status: Missing client_secret.json in ~/.config/philotes/</span>")
-
-    def _on_login_clicked(self, widget):
-        if not self.auth_manager.is_configured():
-            sys.stderr.write("[Philotes] Please place your GCP client_secret.json in ~/.config/philotes/\n")
-            return
+    def _init_chat_view(self):
+        active_card = AccountManager.get_instance().get_active_card("google")
         
-        try:
-            tokens = self.auth_manager.perform_pkce_login()
-            self._update_auth_status_label()
-        except Exception as e:
-            sys.stderr.write(f"[Philotes Auth Error] {e}\n")
+        if existing := self.stack.get_child_by_name("chat"):
+            self.stack.remove(existing)
+
+        if active_card is None:
+            self.chat_app = None
+            self.unread_chat_count = 0
+            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, "chat")
+        else:
+            profile_id = active_card.get("profile_dir")
+            username = active_card.get("username")
+            self.unread_chat_count = active_card.get("unread_count", 0)
+            read_fd, write_fd = os.pipe()
+            self.chat_app = PhiloChatApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+            chat_widget = self.chat_app.get_widget()
+            self.stack.add_named(chat_widget, "chat")
+            GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+
+    def _init_msgs_view(self):
+        active_card = AccountManager.get_instance().get_active_card("google")
+        
+        if existing := self.stack.get_child_by_name("msgs"):
+            self.stack.remove(existing)
+
+        if active_card is None:
+            self.msgs_app = None
+            self.unread_msgs_count = 0
+            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, "msgs")
+        else:
+            profile_id = active_card.get("profile_dir")
+            username = active_card.get("username")
+            self.unread_msgs_count = active_card.get("unread_count", 0)
+            read_fd, write_fd = os.pipe()
+            self.msgs_app = PhiloMsgsApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+            msgs_widget = self.msgs_app.get_widget()
+            self.stack.add_named(msgs_widget, "msgs")
+            GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+
+    def _on_accounts_changed(self):
+        self._init_chat_view()
+        self._init_msgs_view()
+        if self.current_tab in ("chat", "msgs"):
+            self.stack.set_visible_child_name(self.current_tab)
+        self._update_tab_ui()
 
     def _load_theme(self):
         css_provider = Gtk.CssProvider()
@@ -141,24 +207,22 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         else:
             sys.stderr.write(f"[Philotes] Warning: CSS theme not found at {THEME_CSS_PATH}\n")
 
-    def _init_philo_chat(self):
-        read_fd, write_fd = os.pipe()
-        self.chat_app = PhiloChatApp(ipc_write_fd=write_fd)
-        chat_widget = self.chat_app.get_widget()
-        self.stack.add_named(chat_widget, "chat")
-
-        GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-
     def _on_ipc_data_received(self, source, condition):
         if condition & GLib.IO_IN:
             try:
                 data = os.read(source, 1024).decode("utf-8")
+                if not data:
+                    return False
                 for line in data.strip().split("\n"):
                     if not line:
                         continue
                     msg = json.loads(line)
                     if msg.get("type") == "unread_count":
-                        self.unread_chat_count = msg.get("count", 0)
+                        app_name = msg.get("app")
+                        if app_name == "msgs":
+                            self.unread_msgs_count = msg.get("count", 0)
+                        else:
+                            self.unread_chat_count = msg.get("count", 0)
                         GLib.idle_add(self._update_tab_ui)
             except Exception as e:
                 sys.stderr.write(f"[Philotes] IPC read parse error: {e}\n")
@@ -169,31 +233,80 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.stack.set_visible_child_name("chat")
         self._update_tab_ui()
 
-    def _on_settings_tab_clicked(self, widget):
+    def _on_msgs_tab_clicked(self, widget):
+        self.current_tab = "msgs"
+        self.stack.set_visible_child_name("msgs")
+        self._update_tab_ui()
+
+    def _on_settings_tab_clicked(self, widget=None):
         self.current_tab = "settings"
         self.stack.set_visible_child_name("settings")
         self._update_tab_ui()
 
     def _update_tab_ui(self):
+        # Chat tab styling
         if self.current_tab == "chat":
             self.chat_tab_button.remove_css_class("tab-button-inactive")
             self.chat_tab_button.add_css_class("tab-button")
             self.chat_tab_button.add_css_class("tab-button-active")
             self._set_image_from_svg(self.chat_icon_img, ICON_HICOLOR_CHAT)
             self.chat_label.set_visible(True)
+            self.chat_overlay_badge.set_visible(False)
+            if self.unread_chat_count > 0:
+                self.chat_badge.set_text(str(self.unread_chat_count))
+                self.chat_badge.remove_css_class("badge-hidden")
+                self.chat_badge.set_visible(True)
+            else:
+                self.chat_badge.set_text("")
+                self.chat_badge.add_css_class("badge-hidden")
+                self.chat_badge.set_visible(False)
         else:
             self.chat_tab_button.remove_css_class("tab-button-active")
             self.chat_tab_button.add_css_class("tab-button")
             self.chat_tab_button.add_css_class("tab-button-inactive")
             self._set_image_from_svg(self.chat_icon_img, ICON_GREYSCALE_CHAT)
             self.chat_label.set_visible(False)
+            self.chat_badge.set_visible(False)
+            if self.unread_chat_count > 0:
+                self.chat_overlay_badge.set_text(str(self.unread_chat_count))
+                self.chat_overlay_badge.remove_css_class("badge-hidden")
+                self.chat_overlay_badge.set_visible(True)
+            else:
+                self.chat_overlay_badge.set_text("")
+                self.chat_overlay_badge.add_css_class("badge-hidden")
+                self.chat_overlay_badge.set_visible(False)
 
-        if self.unread_chat_count > 0:
-            self.chat_badge.set_text(str(self.unread_chat_count))
-            self.chat_badge.remove_css_class("badge-hidden")
+        # Messages tab styling
+        if self.current_tab == "msgs":
+            self.msgs_tab_button.remove_css_class("tab-button-inactive")
+            self.msgs_tab_button.add_css_class("tab-button")
+            self.msgs_tab_button.add_css_class("tab-button-active")
+            self._set_image_from_svg(self.msgs_icon_img, ICON_HICOLOR_MSGS)
+            self.msgs_label.set_visible(True)
+            self.msgs_overlay_badge.set_visible(False)
+            if self.unread_msgs_count > 0:
+                self.msgs_badge.set_text(str(self.unread_msgs_count))
+                self.msgs_badge.remove_css_class("badge-hidden")
+                self.msgs_badge.set_visible(True)
+            else:
+                self.msgs_badge.set_text("")
+                self.msgs_badge.add_css_class("badge-hidden")
+                self.msgs_badge.set_visible(False)
         else:
-            self.chat_badge.set_text("")
-            self.chat_badge.add_css_class("badge-hidden")
+            self.msgs_tab_button.remove_css_class("tab-button-active")
+            self.msgs_tab_button.add_css_class("tab-button")
+            self.msgs_tab_button.add_css_class("tab-button-inactive")
+            self._set_image_from_svg(self.msgs_icon_img, ICON_GREYSCALE_MSGS)
+            self.msgs_label.set_visible(False)
+            self.msgs_badge.set_visible(False)
+            if self.unread_msgs_count > 0:
+                self.msgs_overlay_badge.set_text(str(self.unread_msgs_count))
+                self.msgs_overlay_badge.remove_css_class("badge-hidden")
+                self.msgs_overlay_badge.set_visible(True)
+            else:
+                self.msgs_overlay_badge.set_text("")
+                self.msgs_overlay_badge.add_css_class("badge-hidden")
+                self.msgs_overlay_badge.set_visible(False)
 
     def _set_image_from_svg(self, gtk_image, svg_path):
         if svg_path.exists():

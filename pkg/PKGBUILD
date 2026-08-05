@@ -1,6 +1,6 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=0.3.0
+pkgver=2.0.0
 
 
 pkgrel=1
@@ -25,6 +25,8 @@ package() {
     install -Dm644 icons/hicolor/philotes.svg "${pkgdir}/usr/share/icons/hicolor/scalable/apps/philotes.svg"
     install -Dm644 icons/hicolor/chat.svg "${pkgdir}/usr/share/philotes/icons/hicolor/chat.svg"
     install -Dm644 icons/greyscale/chat.svg "${pkgdir}/usr/share/philotes/icons/greyscale/chat.svg"
+    install -Dm644 icons/hicolor/messages.svg "${pkgdir}/usr/share/philotes/icons/hicolor/messages.svg"
+    install -Dm644 icons/greyscale/messages.svg "${pkgdir}/usr/share/philotes/icons/greyscale/messages.svg"
 
     # Stylesheet Themes
     install -Dm644 styles/dark-sharp.css "${pkgdir}/usr/share/philotes/styles/dark-sharp.css"

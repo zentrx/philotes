@@ -16,7 +16,6 @@ window {
     padding-bottom: 4px;
 }
 
-/* Button Global Reset for HeaderBar / TopBar */
 #top-bar button {
     background-image: none;
     box-shadow: none;
@@ -25,7 +24,6 @@ window {
     border-radius: 2px;
 }
 
-/* Tab Button Base */
 button.tab-button,
 .tab-button {
     background-color: #1f2335;
@@ -46,7 +44,6 @@ button.tab-button:hover,
     color: #c0caf5;
 }
 
-/* Active Expanded Tab - Blends with top header with subtle depth highlight */
 button.tab-button-active,
 .tab-button-active,
 button.tab-button-active:checked,
@@ -63,7 +60,6 @@ button.tab-button-active:focus {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-/* Inactive Shrunk Tab */
 button.tab-button-inactive,
 .tab-button-inactive {
     background-color: #1f2335;
@@ -86,7 +82,6 @@ button.tab-button-inactive:hover {
     font-size: 13px;
 }
 
-/* Notification Badge */
 .badge {
     background-color: #f7768e;
     color: #1a1b26;
@@ -104,7 +99,13 @@ button.tab-button-inactive:hover {
     opacity: 0;
 }
 
-/* Settings Gear Button */
+.badge-overlay {
+    margin-left: -8px;
+    margin-top: -6px;
+    font-size: 9px;
+    padding: 0px 3px;
+}
+
 #settings-button,
 button#settings-button {
     background-color: #1f2335;
@@ -123,13 +124,159 @@ button#settings-button:hover {
     color: #7aa2f7;
 }
 
-/* Content Container */
 #content-stack {
     background-color: #1a1b26;
 }
 
-/* Settings Placeholder Page */
+/* Settings View Styling */
 #settings-view {
     background-color: #1a1b26;
+    color: #a9b1d6;
+}
+
+.section-desc {
     color: #565f89;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.add-account-btn {
+    background-color: #7aa2f7;
+    background-image: none;
+    color: #1a1b26;
+    font-weight: bold;
+    border-radius: 2px;
+    border: none;
+    padding: 8px 16px;
+    margin-top: 8px;
+}
+
+.add-account-btn:hover {
+    background-color: #bb9af7;
+}
+
+/* Account Card Styling */
+#account-card,
+.account-card {
+    min-width: 540px;
+    padding: 14px 18px;
+    border-radius: 2px;
+    transition: all 150ms ease-in-out;
+}
+
+/* Inactive Card */
+.account-card-inactive {
+    background-color: #16161e;
+    border: 1px solid #2f3549;
+}
+
+.account-card-inactive:hover {
+    background-color: #1f2335;
+    border-color: #414868;
+}
+
+/* Active Card - Illuminated Blue Border */
+.account-card-active {
+    background-color: #24283b;
+    border: 2px solid #7aa2f7;
+    box-shadow: 0 0 10px rgba(122, 162, 247, 0.4);
+}
+
+.card-username {
+    color: #7aa2f7;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.card-time {
+    color: #565f89;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.card-delete-btn {
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid #2f3549;
+    border-radius: 2px;
+    color: #f7768e;
+    padding: 4px 8px;
+}
+
+.card-delete-btn:hover {
+    background-color: #f7768e;
+    color: #1a1b26;
+    border-color: #f7768e;
+}
+
+.card-confirm-delete-btn {
+    background-color: #f7768e;
+    background-image: none;
+    color: #1a1b26;
+    font-weight: bold;
+    border-radius: 2px;
+    border: none;
+    padding: 4px 10px;
+}
+
+.card-cancel-delete-btn {
+    background-color: transparent;
+    background-image: none;
+    color: #a9b1d6;
+    border: 1px solid #2f3549;
+    border-radius: 2px;
+    padding: 4px 10px;
+}
+
+.card-default-btn-active {
+    background-color: #e0af68;
+    background-image: none;
+    color: #1a1b26;
+    font-weight: bold;
+    border-radius: 2px;
+    border: none;
+    padding: 4px 10px;
+}
+
+.card-default-btn-inactive {
+    background-color: transparent;
+    background-image: none;
+    color: #565f89;
+    border: 1px solid #2f3549;
+    border-radius: 2px;
+    padding: 4px 10px;
+}
+
+.card-default-btn-inactive:hover {
+    color: #e0af68;
+    border-color: #e0af68;
+}
+
+/* Splash View Styling */
+#splash-view {
+    background-color: #1a1b26;
+    color: #a9b1d6;
+    padding: 40px;
+}
+
+.splash-message {
+    color: #565f89;
+    font-size: 14px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+}
+
+.splash-settings-btn {
+    background-color: #2e3440;
+    background-image: none;
+    border: 1px solid #7aa2f7;
+    border-radius: 2px;
+    color: #7aa2f7;
+    font-weight: bold;
+    padding: 8px 18px;
+}
+
+.splash-settings-btn:hover {
+    background-color: #7aa2f7;
+    color: #1a1b26;
 }
