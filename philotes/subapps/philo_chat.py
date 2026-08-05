@@ -41,7 +41,7 @@ class PhiloChatApp:
         self.settings.set_enable_webrtc(True)
         self.settings.set_enable_media_stream(True)
         self.settings.set_enable_encrypted_media(True)
-        self.settings.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.NEVER)
+        self.settings.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.ALWAYS)
 
         self.web_view = WebKit.WebView(network_session=self.network_session)
         self.web_view.set_settings(self.settings)

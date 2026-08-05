@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v2.0.2)
+# Philotes Implementation Document (v2.0.3)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 

@@ -10,7 +10,7 @@ build/
 # Arch Linux packaging build artifacts
 *.pkg.tar.zst
 *.pkg.tar.xz
-/pkg/
+/src/
 
 
 # User credentials & local tokens (DO NOT COMMIT)

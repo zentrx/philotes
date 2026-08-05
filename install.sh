@@ -5,13 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 echo "==> Building and Installing Philotes via Pacman (Arch Linux)..."
 
-cd "$SCRIPT_DIR"
-
 if command -v makepkg &> /dev/null; then
+    cd "$SCRIPT_DIR"
     makepkg -ef -si --noconfirm
     echo "==> Philotes successfully installed via pacman!"
 else
     echo "==> Warning: makepkg not found, installing locally via pip --editable..."
+    cd "$SCRIPT_DIR"
     pip install -e . --break-system-packages
     echo "==> Philotes installed locally via pip!"
 fi
@@ -31,3 +31,7 @@ if [ -d "$YAMIS_SCALABLE_DIR" ]; then
         echo "==> Icon theme cache updated successfully!"
     fi
 fi
+
+echo "==> Cleaning up build artifacts..."
+rm -rf "$SCRIPT_DIR/build" "$SCRIPT_DIR/dist" "$SCRIPT_DIR"/*.egg-info "$SCRIPT_DIR"/*.pkg.tar.zst "$SCRIPT_DIR/src" "$SCRIPT_DIR/pkg"
+echo "==> Installation and cleanup complete!"

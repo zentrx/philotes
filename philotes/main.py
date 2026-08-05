@@ -54,6 +54,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         # Left Tab Bar
         self.tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.tabs_box.set_hexpand(True)
 
         # Chat Tab Button
         self.chat_tab_button = Gtk.Button()
@@ -114,13 +115,6 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.tabs_box.append(self.msgs_tab_button)
 
         self.top_bar.append(self.tabs_box)
-
-        # Center Header Title Label
-        self.header_title_label = Gtk.Label(label="Philotes")
-        self.header_title_label.add_css_class("header-title-label")
-        self.header_title_label.set_halign(Gtk.Align.CENTER)
-        self.header_title_label.set_hexpand(True)
-        self.top_bar.append(self.header_title_label)
 
         # Right Settings Button
         self.settings_button = Gtk.Button()
@@ -295,8 +289,6 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             full_title = f"Philotes | {tab_name}"
 
         self.set_title(full_title)
-        if hasattr(self, "header_title_label") and self.header_title_label:
-            self.header_title_label.set_text(full_title)
 
     def _update_tab_ui(self):
         # Chat tab styling

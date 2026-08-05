@@ -20,16 +20,22 @@ ICON_GREYSCALE_MSGS = BASE_DIR / "icons" / "greyscale" / "messages.svg"
 ICON_HICOLOR_PHILOTES = BASE_DIR / "icons" / "hicolor" / "philotes.svg"
 ICON_GREYSCALE_PHILOTES = BASE_DIR / "icons" / "greyscale" / "philotes.svg"
 
-# Fallback to system paths if installed in /usr/share
+# Fallback to system paths (/opt/philotes or /usr/share/philotes) if installed
 if not ICON_HICOLOR_CHAT.exists():
-    ICON_HICOLOR_CHAT = Path("/usr/share/philotes/icons/hicolor/chat.svg")
-    ICON_GREYSCALE_CHAT = Path("/usr/share/philotes/icons/greyscale/chat.svg")
-    ICON_HICOLOR_MSGS = Path("/usr/share/philotes/icons/hicolor/messages.svg")
-    ICON_GREYSCALE_MSGS = Path("/usr/share/philotes/icons/greyscale/messages.svg")
-    ICON_HICOLOR_PHILOTES = Path("/usr/share/philotes/icons/hicolor/philotes.svg")
-    ICON_GREYSCALE_PHILOTES = Path("/usr/share/philotes/icons/greyscale/philotes.svg")
+    for prefix in [Path("/opt/philotes"), Path("/usr/share/philotes")]:
+        if (prefix / "icons" / "hicolor" / "chat.svg").exists():
+            ICON_HICOLOR_CHAT = prefix / "icons" / "hicolor" / "chat.svg"
+            ICON_GREYSCALE_CHAT = prefix / "icons" / "greyscale" / "chat.svg"
+            ICON_HICOLOR_MSGS = prefix / "icons" / "hicolor" / "messages.svg"
+            ICON_GREYSCALE_MSGS = prefix / "icons" / "greyscale" / "messages.svg"
+            ICON_HICOLOR_PHILOTES = prefix / "icons" / "hicolor" / "philotes.svg"
+            ICON_GREYSCALE_PHILOTES = prefix / "icons" / "greyscale" / "philotes.svg"
+            break
 
 THEME_CSS_PATH = BASE_DIR / "styles" / "dark-sharp.css"
 if not THEME_CSS_PATH.exists():
-    THEME_CSS_PATH = Path("/usr/share/philotes/styles/dark-sharp.css")
+    for prefix in [Path("/opt/philotes"), Path("/usr/share/philotes")]:
+        if (prefix / "styles" / "dark-sharp.css").exists():
+            THEME_CSS_PATH = prefix / "styles" / "dark-sharp.css"
+            break
 

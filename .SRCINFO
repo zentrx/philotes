@@ -1,0 +1,18 @@
+pkgbase = philotes
+	pkgdesc = Linux-first communication application container designed to run continuously on Arch Linux
+	pkgver = 2.0.3
+	pkgrel = 1
+	url = https://github.com/philotes/philotes
+	arch = any
+	license = MIT
+	makedepends = python-setuptools
+	makedepends = python-build
+	makedepends = python-installer
+	makedepends = python-wheel
+	depends = python
+	depends = python-gobject
+	depends = webkitgtk-6.0
+	depends = gtk4
+	depends = hicolor-icon-theme
+
+pkgname = philotes

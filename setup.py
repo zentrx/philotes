@@ -1,14 +1,13 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 setup(
     name="philotes",
-    version="2.0.2",
+    version="2.0.3",
 
 
     description="Linux-First Communication Application Container",
     author="Philotes Team",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
+    packages=find_namespace_packages(include=["philotes", "philotes.*"]),
     entry_points={
         "console_scripts": [
             "philotes = philotes.main:main",
