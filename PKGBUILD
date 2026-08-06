@@ -1,6 +1,6 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=3.0.0
+pkgver=4.0.1
 pkgrel=1
 pkgdesc="Linux-first communication application container designed to run continuously on Arch Linux"
 arch=('any')
@@ -24,6 +24,7 @@ package() {
     ln -s /opt/philotes/bin/philotes "${pkgdir}/usr/bin/philotes"
     ln -s /opt/philotes/bin/philo-chat "${pkgdir}/usr/bin/philo-chat"
     ln -s /opt/philotes/bin/philo-msgs "${pkgdir}/usr/bin/philo-msgs"
+    ln -s /opt/philotes/bin/philo-keep "${pkgdir}/usr/bin/philo-keep"
 
     # Register /opt/philotes site-packages path in system Python
     _pyver=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -46,6 +47,8 @@ package() {
     install -Dm644 icons/greyscale/nytimes.svg "${pkgdir}/opt/philotes/icons/greyscale/nytimes.svg"
     install -Dm644 icons/hicolor/wordle.svg "${pkgdir}/opt/philotes/icons/hicolor/wordle.svg"
     install -Dm644 icons/greyscale/wordle.svg "${pkgdir}/opt/philotes/icons/greyscale/wordle.svg"
+    install -Dm644 icons/hicolor/keep.svg "${pkgdir}/opt/philotes/icons/hicolor/keep.svg"
+    install -Dm644 icons/greyscale/keep.svg "${pkgdir}/opt/philotes/icons/greyscale/keep.svg"
 
     # Stylesheet Themes
     install -Dm644 styles/dark-sharp.css "${pkgdir}/opt/philotes/styles/dark-sharp.css"

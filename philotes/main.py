@@ -16,6 +16,8 @@ from philotes.config import (
     ICON_GREYSCALE_MSGS,
     ICON_HICOLOR_WORDLE,
     ICON_GREYSCALE_WORDLE,
+    ICON_HICOLOR_KEEP,
+    ICON_GREYSCALE_KEEP,
     ICON_HICOLOR_PHILOTES,
     ICON_GREYSCALE_PHILOTES,
     THEME_CSS_PATH,
@@ -23,6 +25,7 @@ from philotes.config import (
 from philotes.subapps.philo_chat import PhiloChatApp
 from philotes.subapps.philo_msgs import PhiloMsgsApp
 from philotes.subapps.philo_wordle import PhiloWordleApp
+from philotes.subapps.philo_keep import PhiloKeepApp
 from philotes.account_manager import AccountManager
 from philotes.views.settings_view import SettingsView
 from philotes.components.splash_view import SplashView
@@ -43,6 +46,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         self.unread_chat_count = 0
         self.unread_msgs_count = 0
+        self.unread_keep_count = 0
         self.chat_selected_title = None
         self.msgs_selected_title = None
         self.wordle_completed = False
@@ -119,6 +123,35 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.msgs_tab_button.set_child(self.msgs_tab_box)
         self.tabs_box.append(self.msgs_tab_button)
 
+        # Keep Tab Button
+        self.keep_tab_button = Gtk.Button()
+        self.keep_tab_button.connect("clicked", self._on_keep_tab_clicked)
+
+        self.keep_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.keep_overlay = Gtk.Overlay()
+        self.keep_icon_img = Gtk.Image()
+        self.keep_overlay.set_child(self.keep_icon_img)
+
+        self.keep_overlay_badge = Gtk.Label(label="")
+        self.keep_overlay_badge.add_css_class("badge")
+        self.keep_overlay_badge.add_css_class("badge-overlay")
+        self.keep_overlay_badge.set_halign(Gtk.Align.END)
+        self.keep_overlay_badge.set_valign(Gtk.Align.START)
+        self.keep_overlay.add_overlay(self.keep_overlay_badge)
+
+        self.keep_label = Gtk.Label(label="Keep")
+        self.keep_label.add_css_class("tab-label")
+
+        self.keep_badge = Gtk.Label(label="")
+        self.keep_badge.add_css_class("badge")
+        self.keep_badge.add_css_class("badge-hidden")
+
+        self.keep_tab_box.append(self.keep_overlay)
+        self.keep_tab_box.append(self.keep_label)
+        self.keep_tab_box.append(self.keep_badge)
+        self.keep_tab_button.set_child(self.keep_tab_box)
+        self.tabs_box.append(self.keep_tab_button)
+
         # Wordle Tab Button
         self.wordle_tab_button = Gtk.Button()
         self.wordle_tab_button.connect("clicked", self._on_wordle_tab_clicked)
@@ -171,6 +204,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._init_chat_view()
         self._init_msgs_view()
         self._init_wordle_view()
+        self._init_keep_view()
 
         self.settings_view = SettingsView(on_accounts_changed_cb=self._on_accounts_changed)
         self.stack.add_named(self.settings_view, "settings")
@@ -242,11 +276,33 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
             return True
 
+    def _init_keep_view(self):
+        active_card = AccountManager.get_instance().get_active_card("google")
+        
+        if existing := self.stack.get_child_by_name("keep"):
+            self.stack.remove(existing)
+
+        if active_card is None:
+            self.keep_app = None
+            self.unread_keep_count = 0
+            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, "keep")
+        else:
+            profile_id = active_card.get("profile_dir")
+            username = active_card.get("username")
+            self.unread_keep_count = active_card.get("unread_count", 0)
+            read_fd, write_fd = os.pipe()
+            self.keep_app = PhiloKeepApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+            keep_widget = self.keep_app.get_widget()
+            self.stack.add_named(keep_widget, "keep")
+            GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+
     def _on_accounts_changed(self):
         self._init_chat_view()
         self._init_msgs_view()
         self._init_wordle_view()
-        if self.current_tab in ("chat", "msgs", "wordle"):
+        self._init_keep_view()
+        if self.current_tab in ("chat", "msgs", "wordle", "keep"):
             self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
 
@@ -289,6 +345,8 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                                 self.unread_msgs_count = count
                             elif app_name == "chat":
                                 self.unread_chat_count = count
+                            elif app_name == "keep":
+                                self.unread_keep_count = count
 
                         if "completed" in msg and app_name == "wordle":
                             self.wordle_completed = msg.get("completed", False)
@@ -332,6 +390,12 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_tab_ui()
         self._update_header_title()
 
+    def _on_keep_tab_clicked(self, widget=None):
+        self.current_tab = "keep"
+        self.stack.set_visible_child_name("keep")
+        self._update_tab_ui()
+        self._update_header_title()
+
     def _on_wordle_tab_clicked(self, widget=None):
         active_card = AccountManager.get_instance().get_active_card("nytimes")
         if active_card is None:
@@ -367,6 +431,9 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         elif self.current_tab == "wordle":
             tab_name = "Wordle"
             selected_title = self.wordle_selected_title
+        elif self.current_tab == "keep":
+            tab_name = "Keep"
+            selected_title = None
         elif self.current_tab == "settings":
             tab_name = "Settings"
             selected_title = None
@@ -465,6 +532,38 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             self.wordle_overlay_badge.set_visible(True)
         else:
             self.wordle_overlay_badge.set_visible(False)
+
+        # Keep tab styling
+        if self.current_tab == "keep":
+            self.keep_tab_button.remove_css_class("tab-button-inactive")
+            self.keep_tab_button.add_css_class("tab-button")
+            self.keep_tab_button.add_css_class("tab-button-active")
+            self._set_image_from_svg(self.keep_icon_img, ICON_HICOLOR_KEEP)
+            self.keep_label.set_visible(True)
+            self.keep_overlay_badge.set_visible(False)
+            if self.unread_keep_count > 0:
+                self.keep_badge.set_text(str(self.unread_keep_count))
+                self.keep_badge.remove_css_class("badge-hidden")
+                self.keep_badge.set_visible(True)
+            else:
+                self.keep_badge.set_text("")
+                self.keep_badge.add_css_class("badge-hidden")
+                self.keep_badge.set_visible(False)
+        else:
+            self.keep_tab_button.remove_css_class("tab-button-active")
+            self.keep_tab_button.add_css_class("tab-button")
+            self.keep_tab_button.add_css_class("tab-button-inactive")
+            self._set_image_from_svg(self.keep_icon_img, ICON_GREYSCALE_KEEP)
+            self.keep_label.set_visible(False)
+            self.keep_badge.set_visible(False)
+            if self.unread_keep_count > 0:
+                self.keep_overlay_badge.set_text(str(self.unread_keep_count))
+                self.keep_overlay_badge.remove_css_class("badge-hidden")
+                self.keep_overlay_badge.set_visible(True)
+            else:
+                self.keep_overlay_badge.set_text("")
+                self.keep_overlay_badge.add_css_class("badge-hidden")
+                self.keep_overlay_badge.set_visible(False)
 
     def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=20, fallback_icon_name=None):
         if svg_path and svg_path.exists():

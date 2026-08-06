@@ -5,6 +5,7 @@ APP_NAME = "philotes"
 SUBAPP_CHAT_NAME = "philo-chat"
 SUBAPP_MSGS_NAME = "philo-msgs"
 SUBAPP_WORDLE_NAME = "philo-wordle"
+SUBAPP_KEEP_NAME = "philo-keep"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -14,33 +15,28 @@ CACHE_DIR = Path(os.path.expanduser("~/.cache/philotes"))
 CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-ICON_HICOLOR_CHAT = BASE_DIR / "icons" / "hicolor" / "chat.svg"
-ICON_GREYSCALE_CHAT = BASE_DIR / "icons" / "greyscale" / "chat.svg"
-ICON_HICOLOR_MSGS = BASE_DIR / "icons" / "hicolor" / "messages.svg"
-ICON_GREYSCALE_MSGS = BASE_DIR / "icons" / "greyscale" / "messages.svg"
-ICON_HICOLOR_WORDLE = BASE_DIR / "icons" / "hicolor" / "wordle.svg"
-ICON_GREYSCALE_WORDLE = BASE_DIR / "icons" / "greyscale" / "wordle.svg"
-ICON_HICOLOR_PHILOTES = BASE_DIR / "icons" / "hicolor" / "philotes.svg"
-ICON_GREYSCALE_PHILOTES = BASE_DIR / "icons" / "greyscale" / "philotes.svg"
-
-# Fallback to system paths (/opt/philotes or /usr/share/philotes) if installed
-if not ICON_HICOLOR_CHAT.exists():
+def _resolve_asset_path(rel_path: str) -> Path:
+    # 1. Workspace / relative to BASE_DIR
+    local_path = BASE_DIR / rel_path
+    if local_path.exists():
+        return local_path
+    # 2. Installed system paths (/opt/philotes, /usr/share/philotes)
     for prefix in [Path("/opt/philotes"), Path("/usr/share/philotes")]:
-        if (prefix / "icons" / "hicolor" / "chat.svg").exists():
-            ICON_HICOLOR_CHAT = prefix / "icons" / "hicolor" / "chat.svg"
-            ICON_GREYSCALE_CHAT = prefix / "icons" / "greyscale" / "chat.svg"
-            ICON_HICOLOR_MSGS = prefix / "icons" / "hicolor" / "messages.svg"
-            ICON_GREYSCALE_MSGS = prefix / "icons" / "greyscale" / "messages.svg"
-            ICON_HICOLOR_WORDLE = prefix / "icons" / "hicolor" / "wordle.svg"
-            ICON_GREYSCALE_WORDLE = prefix / "icons" / "greyscale" / "wordle.svg"
-            ICON_HICOLOR_PHILOTES = prefix / "icons" / "hicolor" / "philotes.svg"
-            ICON_GREYSCALE_PHILOTES = prefix / "icons" / "greyscale" / "philotes.svg"
-            break
+        sys_path = prefix / rel_path
+        if sys_path.exists():
+            return sys_path
+    return local_path
 
-THEME_CSS_PATH = BASE_DIR / "styles" / "dark-sharp.css"
-if not THEME_CSS_PATH.exists():
-    for prefix in [Path("/opt/philotes"), Path("/usr/share/philotes")]:
-        if (prefix / "styles" / "dark-sharp.css").exists():
-            THEME_CSS_PATH = prefix / "styles" / "dark-sharp.css"
-            break
+ICON_HICOLOR_CHAT = _resolve_asset_path("icons/hicolor/chat.svg")
+ICON_GREYSCALE_CHAT = _resolve_asset_path("icons/greyscale/chat.svg")
+ICON_HICOLOR_MSGS = _resolve_asset_path("icons/hicolor/messages.svg")
+ICON_GREYSCALE_MSGS = _resolve_asset_path("icons/greyscale/messages.svg")
+ICON_HICOLOR_WORDLE = _resolve_asset_path("icons/hicolor/wordle.svg")
+ICON_GREYSCALE_WORDLE = _resolve_asset_path("icons/greyscale/wordle.svg")
+ICON_HICOLOR_KEEP = _resolve_asset_path("icons/hicolor/keep.svg")
+ICON_GREYSCALE_KEEP = _resolve_asset_path("icons/greyscale/keep.svg")
+ICON_HICOLOR_PHILOTES = _resolve_asset_path("icons/hicolor/philotes.svg")
+ICON_GREYSCALE_PHILOTES = _resolve_asset_path("icons/greyscale/philotes.svg")
+
+THEME_CSS_PATH = _resolve_asset_path("styles/dark-sharp.css")
 

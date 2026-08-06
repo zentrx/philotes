@@ -1,6 +1,6 @@
 pkgbase = philotes
 	pkgdesc = Linux-first communication application container designed to run continuously on Arch Linux
-	pkgver = 3.0.0
+	pkgver = 4.0.1
 	pkgrel = 1
 	url = https://github.com/philotes/philotes
 	arch = any

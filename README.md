@@ -1,15 +1,15 @@
-# Philotes (v2.1.1)
+# Philotes (v4.0.1)
 
-**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular communication sub-applications: **Google Chat** (`philo-chat`) and **Google Messages** (`philo-msgs`).
+**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **NYT Wordle** (`philo-wordle`), and **Google Keep** (`philo-keep`).
 
 ---
 
 ## Features
 
 - **Process Isolation & OS Identification (`btop`/`htop`)**:
-  - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, and `philo-msgs`.
+  - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, `philo-msgs`, `philo-wordle`, and `philo-keep`.
 - **Top Bar & Dynamic Tabs**:
-  - Modern header bar featuring active expanded tabs (color icon + label + unread badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
+  - Modern header bar featuring active expanded tabs (color icon + label + unread/reminder badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
   - Background webviews remain mounted in memory for instant tab switching.
 - **Single Sign-On & Profile Session Pools**:
   - Shared WebKit 6.0 `NetworkSession` with SQLite persistent cookie database (`cookies.sqlite`) across service pools.
@@ -47,6 +47,10 @@ philotes
 2. **Google Messages (`philo-msgs`)**:
    - Connects to Google Messages (`messages.google.com/web`) sharing the Google auth profile.
    - Persists Web QR device pairings and displays real-time SMS/MMS unread badges.
+
+3. **Google Keep (`philo-keep`)**:
+   - Opens Google Keep (`keep.google.com`) sharing the active Google Auth Card profile.
+   - Tracks upcoming Keep Reminders and displays live reminder count badges.
 
 3. **GCP OAuth Setup (Settings ⚙)**:
    - Download your Desktop Application OAuth client key from Google Cloud Console.

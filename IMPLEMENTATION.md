@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v2.1.1)
+# Philotes Implementation Document (v4.0.1)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
@@ -8,9 +8,11 @@ This document provides a comprehensive overview of the currently implemented arc
 
 **Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with a minimal system resource footprint. It hosts modular sub-applications built on **GTK 4** and **WebKitGTK 6.0**. 
 
-Version **2.0.0** represents the two primary active communication sub-applications supported by the platform:
+Supported sub-applications:
 1. **Google Chat (`philo-chat`)**: Isolated webview container hosting Google Chat with real-time unread badge monitoring.
 2. **Google Messages (`philo-msgs`)**: Integrated webview container hosting Google Messages (`messages.google.com/web`) with persistent device pairing and unread SMS/MMS notifications.
+3. **NYT Wordle (`philo-wordle`)**: Interactive NYT Wordle puzzle integration.
+4. **Google Keep (`philo-keep`)**: Integrated Google Keep note and task container with upcoming Reminders tracking.
 
 ---
 
@@ -24,19 +26,18 @@ Version **2.0.0** represents the two primary active communication sub-applicatio
                                │  - SessionManager (Profile Symlinks)   │
                                └──────────────────┬─────────────────────┘
                                                   │
-                       ┌──────────────────────────┴──────────────────────────┐
-                       ▼                                                     ▼
-           ┌───────────────────────┐                             ┌───────────────────────┐
-           │      philo-chat       │                             │      philo-msgs       │
-           │  - Google Chat App    │                             │  - Google Messages    │
-           │  - WebKitGTK 6.0      │                             │  - WebKitGTK 6.0      │
-           │  - Title Observer     │                             │  - Title Observer     │
-           └───────────────────────┘                             └───────────────────────┘
+       ┌──────────────────────┬───────────────────┼───────────────────┐
+       ▼                      ▼                   ▼                   ▼
+┌───────────────┐     ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│  philo-chat   │     │  philo-msgs   │   │  philo-wordle │   │  philo-keep   │
+│ - Google Chat │     │ - Messages    │   │ - NYT Wordle  │   │ - Google Keep │
+│ - WebKit 6.0  │     │ - WebKit 6.0  │   │ - WebKit 6.0  │   │ - WebKit 6.0  │
+└───────────────┘     └───────────────┘   └───────────────┘   └───────────────┘
 ```
 
 ### 2.1 Multi-Process Sub-Application Architecture
 - **Master Container (`philotes.main:main`)**: Initializes the main GTK 4 window, top navigation bar, account manager, and view stack.
-- **Sub-Application Binaries (`philo-chat`, `philo-msgs`)**: Executable Python sub-processes registered via native Linux `prctl(PR_SET_NAME)` so `btop`, `htop`, and `ps aux` accurately display individual task names (`philotes`, `philo-chat`, `philo-msgs`) with independent CPU and memory tracking.
+- **Sub-Application Binaries (`philo-chat`, `philo-msgs`, `philo-wordle`, `philo-keep`)**: Executable Python sub-processes registered via native Linux `prctl(PR_SET_NAME)` so `btop`, `htop`, and `ps aux` accurately display individual task names (`philotes`, `philo-chat`, `philo-msgs`, `philo-wordle`, `philo-keep`) with independent CPU and memory tracking.
 - **Background Persistence**: Webviews remain mounted in memory when switching tabs, allowing instant, zero-latency tab switching without web page re-renders.
 
 ### 2.2 Auth Card & Service Pool Manager (`philotes.account_manager`)
