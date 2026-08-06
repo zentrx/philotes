@@ -70,8 +70,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.chat_tab_button.connect("clicked", self._on_chat_tab_clicked)
         
         self.chat_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.chat_tab_box.set_halign(Gtk.Align.CENTER)
+        self.chat_tab_box.set_valign(Gtk.Align.CENTER)
         self.chat_overlay = Gtk.Overlay()
         self.chat_icon_img = Gtk.Image()
+        self.chat_icon_img.add_css_class("tab-icon-img")
         self.chat_overlay.set_child(self.chat_icon_img)
 
         self.chat_overlay_badge = Gtk.Label(label="")
@@ -99,8 +102,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.msgs_tab_button.connect("clicked", self._on_msgs_tab_clicked)
 
         self.msgs_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.msgs_tab_box.set_halign(Gtk.Align.CENTER)
+        self.msgs_tab_box.set_valign(Gtk.Align.CENTER)
         self.msgs_overlay = Gtk.Overlay()
         self.msgs_icon_img = Gtk.Image()
+        self.msgs_icon_img.add_css_class("tab-icon-img")
         self.msgs_overlay.set_child(self.msgs_icon_img)
 
         self.msgs_overlay_badge = Gtk.Label(label="")
@@ -128,8 +134,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.keep_tab_button.connect("clicked", self._on_keep_tab_clicked)
 
         self.keep_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.keep_tab_box.set_halign(Gtk.Align.CENTER)
+        self.keep_tab_box.set_valign(Gtk.Align.CENTER)
         self.keep_overlay = Gtk.Overlay()
         self.keep_icon_img = Gtk.Image()
+        self.keep_icon_img.add_css_class("tab-icon-img")
         self.keep_overlay.set_child(self.keep_icon_img)
 
         self.keep_overlay_badge = Gtk.Label(label="")
@@ -157,8 +166,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.wordle_tab_button.connect("clicked", self._on_wordle_tab_clicked)
 
         self.wordle_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.wordle_tab_box.set_halign(Gtk.Align.CENTER)
+        self.wordle_tab_box.set_valign(Gtk.Align.CENTER)
         self.wordle_overlay = Gtk.Overlay()
         self.wordle_icon_img = Gtk.Image()
+        self.wordle_icon_img.add_css_class("tab-icon-img")
         self.wordle_overlay.set_child(self.wordle_icon_img)
 
         self.wordle_overlay_badge = Gtk.Box()
@@ -565,7 +577,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                 self.keep_overlay_badge.add_css_class("badge-hidden")
                 self.keep_overlay_badge.set_visible(False)
 
-    def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=20, fallback_icon_name=None):
+    def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=28, fallback_icon_name=None):
         if svg_path and svg_path.exists():
             try:
                 gtk_image.set_from_file(str(svg_path))

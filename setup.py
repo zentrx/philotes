@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="philotes",
-    version="4.0.1",
+    version="4.1.0",
 
 
     description="Linux-First Communication Application Container",

@@ -31,6 +31,14 @@ window {
     border-radius: 2px;
 }
 
+.tab-icon-img,
+button.tab-button image {
+    min-width: 28px;
+    min-height: 28px;
+    margin: 0;
+    padding: 0;
+}
+
 button.tab-button,
 .tab-button {
     background-color: #1f2335;
@@ -74,7 +82,9 @@ button.tab-button-inactive,
     border: 1px solid #24283b;
     border-radius: 2px;
     color: #565f89;
-    padding: 6px 8px;
+    padding: 6px;
+    min-width: 40px;
+    min-height: 40px;
     box-shadow: none;
 }
 

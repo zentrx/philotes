@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v4.0.1)
+# Philotes Implementation Document (v4.1.0)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
