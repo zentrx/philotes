@@ -4,6 +4,7 @@ from pathlib import Path
 APP_NAME = "philotes"
 SUBAPP_CHAT_NAME = "philo-chat"
 SUBAPP_MSGS_NAME = "philo-msgs"
+SUBAPP_WORDLE_NAME = "philo-wordle"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -17,6 +18,8 @@ ICON_HICOLOR_CHAT = BASE_DIR / "icons" / "hicolor" / "chat.svg"
 ICON_GREYSCALE_CHAT = BASE_DIR / "icons" / "greyscale" / "chat.svg"
 ICON_HICOLOR_MSGS = BASE_DIR / "icons" / "hicolor" / "messages.svg"
 ICON_GREYSCALE_MSGS = BASE_DIR / "icons" / "greyscale" / "messages.svg"
+ICON_HICOLOR_WORDLE = BASE_DIR / "icons" / "hicolor" / "wordle.svg"
+ICON_GREYSCALE_WORDLE = BASE_DIR / "icons" / "greyscale" / "wordle.svg"
 ICON_HICOLOR_PHILOTES = BASE_DIR / "icons" / "hicolor" / "philotes.svg"
 ICON_GREYSCALE_PHILOTES = BASE_DIR / "icons" / "greyscale" / "philotes.svg"
 
@@ -28,6 +31,8 @@ if not ICON_HICOLOR_CHAT.exists():
             ICON_GREYSCALE_CHAT = prefix / "icons" / "greyscale" / "chat.svg"
             ICON_HICOLOR_MSGS = prefix / "icons" / "hicolor" / "messages.svg"
             ICON_GREYSCALE_MSGS = prefix / "icons" / "greyscale" / "messages.svg"
+            ICON_HICOLOR_WORDLE = prefix / "icons" / "hicolor" / "wordle.svg"
+            ICON_GREYSCALE_WORDLE = prefix / "icons" / "greyscale" / "wordle.svg"
             ICON_HICOLOR_PHILOTES = prefix / "icons" / "hicolor" / "philotes.svg"
             ICON_GREYSCALE_PHILOTES = prefix / "icons" / "greyscale" / "philotes.svg"
             break

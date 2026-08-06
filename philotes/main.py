@@ -14,12 +14,15 @@ from philotes.config import (
     ICON_GREYSCALE_CHAT,
     ICON_HICOLOR_MSGS,
     ICON_GREYSCALE_MSGS,
+    ICON_HICOLOR_WORDLE,
+    ICON_GREYSCALE_WORDLE,
     ICON_HICOLOR_PHILOTES,
     ICON_GREYSCALE_PHILOTES,
     THEME_CSS_PATH,
 )
 from philotes.subapps.philo_chat import PhiloChatApp
 from philotes.subapps.philo_msgs import PhiloMsgsApp
+from philotes.subapps.philo_wordle import PhiloWordleApp
 from philotes.account_manager import AccountManager
 from philotes.views.settings_view import SettingsView
 from philotes.components.splash_view import SplashView
@@ -42,6 +45,8 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.unread_msgs_count = 0
         self.chat_selected_title = None
         self.msgs_selected_title = None
+        self.wordle_completed = False
+        self.wordle_selected_title = None
 
         self._load_theme()
 
@@ -114,6 +119,29 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.msgs_tab_button.set_child(self.msgs_tab_box)
         self.tabs_box.append(self.msgs_tab_button)
 
+        # Wordle Tab Button
+        self.wordle_tab_button = Gtk.Button()
+        self.wordle_tab_button.connect("clicked", self._on_wordle_tab_clicked)
+
+        self.wordle_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.wordle_overlay = Gtk.Overlay()
+        self.wordle_icon_img = Gtk.Image()
+        self.wordle_overlay.set_child(self.wordle_icon_img)
+
+        self.wordle_overlay_badge = Gtk.Box()
+        self.wordle_overlay_badge.add_css_class("badge-blue-dot")
+        self.wordle_overlay_badge.set_halign(Gtk.Align.END)
+        self.wordle_overlay_badge.set_valign(Gtk.Align.START)
+        self.wordle_overlay.add_overlay(self.wordle_overlay_badge)
+
+        self.wordle_label = Gtk.Label(label="Wordle")
+        self.wordle_label.add_css_class("tab-label")
+
+        self.wordle_tab_box.append(self.wordle_overlay)
+        self.wordle_tab_box.append(self.wordle_label)
+        self.wordle_tab_button.set_child(self.wordle_tab_box)
+        self.tabs_box.append(self.wordle_tab_button)
+
         self.top_bar.append(self.tabs_box)
 
         # Right Settings Button
@@ -142,6 +170,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         self._init_chat_view()
         self._init_msgs_view()
+        self._init_wordle_view()
 
         self.settings_view = SettingsView(on_accounts_changed_cb=self._on_accounts_changed)
         self.stack.add_named(self.settings_view, "settings")
@@ -192,10 +221,32 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             self.stack.add_named(msgs_widget, "msgs")
             GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
 
+    def _init_wordle_view(self):
+        active_card = AccountManager.get_instance().get_active_card("nytimes")
+        
+        if existing := self.stack.get_child_by_name("wordle"):
+            self.stack.remove(existing)
+
+        if active_card is None or not active_card.get("subscribed", True):
+            self.wordle_app = None
+            splash = SplashView("NYTimes", on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, "wordle")
+            return False
+        else:
+            profile_id = active_card.get("profile_dir")
+            username = active_card.get("username")
+            read_fd, write_fd = os.pipe()
+            self.wordle_app = PhiloWordleApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+            wordle_widget = self.wordle_app.get_widget()
+            self.stack.add_named(wordle_widget, "wordle")
+            GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+            return True
+
     def _on_accounts_changed(self):
         self._init_chat_view()
         self._init_msgs_view()
-        if self.current_tab in ("chat", "msgs"):
+        self._init_wordle_view()
+        if self.current_tab in ("chat", "msgs", "wordle"):
             self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
 
@@ -236,21 +287,38 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                             count = msg.get("count", 0)
                             if app_name == "msgs":
                                 self.unread_msgs_count = count
-                            else:
+                            elif app_name == "chat":
                                 self.unread_chat_count = count
+
+                        if "completed" in msg and app_name == "wordle":
+                            self.wordle_completed = msg.get("completed", False)
 
                         if "title" in msg:
                             title = msg.get("title")
                             if app_name == "msgs":
                                 self.msgs_selected_title = title
-                            else:
+                            elif app_name == "chat":
                                 self.chat_selected_title = title
+                            elif app_name == "wordle":
+                                self.wordle_selected_title = title
 
                         GLib.idle_add(self._update_tab_ui)
                         GLib.idle_add(self._update_header_title)
+                    elif msg_type == "auth_error" and app_name == "wordle":
+                        reason = msg.get("reason")
+                        err_msg = (
+                            "No appropriate NYTimes Auth Card found in Service Pool."
+                            if reason == "no_auth_card"
+                            else "Your NYTimes Authorization does not include a valid subscription."
+                        )
+                        GLib.idle_add(lambda: self._redirect_to_settings_with_error(err_msg))
             except Exception as e:
                 sys.stderr.write(f"[Philotes] IPC read parse error: {e}\n")
         return True
+
+    def _redirect_to_settings_with_error(self, err_msg):
+        self._on_settings_tab_clicked()
+        self.settings_view.show_alert_message(err_msg)
 
     def _on_chat_tab_clicked(self, widget):
         self.current_tab = "chat"
@@ -261,6 +329,25 @@ class PhilotesWindow(Gtk.ApplicationWindow):
     def _on_msgs_tab_clicked(self, widget):
         self.current_tab = "msgs"
         self.stack.set_visible_child_name("msgs")
+        self._update_tab_ui()
+        self._update_header_title()
+
+    def _on_wordle_tab_clicked(self, widget=None):
+        active_card = AccountManager.get_instance().get_active_card("nytimes")
+        if active_card is None:
+            self._on_settings_tab_clicked()
+            self.settings_view.show_alert_message("No appropriate NYTimes Auth Card found in Service Pool.")
+            return
+
+        if not active_card.get("subscribed", True):
+            self._on_settings_tab_clicked()
+            self.settings_view.show_alert_message("Your NYTimes Authorization does not include a valid subscription.")
+            return
+
+        self.settings_view.show_alert_message(None)
+        self._init_wordle_view()
+        self.current_tab = "wordle"
+        self.stack.set_visible_child_name("wordle")
         self._update_tab_ui()
         self._update_header_title()
 
@@ -277,6 +364,9 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         elif self.current_tab == "msgs":
             tab_name = "Messages"
             selected_title = self.msgs_selected_title
+        elif self.current_tab == "wordle":
+            tab_name = "Wordle"
+            selected_title = self.wordle_selected_title
         elif self.current_tab == "settings":
             tab_name = "Settings"
             selected_title = None
@@ -356,13 +446,37 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                 self.msgs_overlay_badge.add_css_class("badge-hidden")
                 self.msgs_overlay_badge.set_visible(False)
 
-    def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=20):
-        if svg_path.exists():
+        # Wordle tab styling
+        if self.current_tab == "wordle":
+            self.wordle_tab_button.remove_css_class("tab-button-inactive")
+            self.wordle_tab_button.add_css_class("tab-button")
+            self.wordle_tab_button.add_css_class("tab-button-active")
+            self._set_image_from_svg(self.wordle_icon_img, ICON_HICOLOR_WORDLE, fallback_icon_name="wayland")
+            self.wordle_label.set_visible(True)
+        else:
+            self.wordle_tab_button.remove_css_class("tab-button-active")
+            self.wordle_tab_button.add_css_class("tab-button")
+            self.wordle_tab_button.add_css_class("tab-button-inactive")
+            self._set_image_from_svg(self.wordle_icon_img, ICON_GREYSCALE_WORDLE, fallback_icon_name="wayland")
+            self.wordle_label.set_visible(False)
+
+        # Show small blue dot overlayed on icon top right corner if Wordle is incomplete
+        if not self.wordle_completed:
+            self.wordle_overlay_badge.set_visible(True)
+        else:
+            self.wordle_overlay_badge.set_visible(False)
+
+    def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=20, fallback_icon_name=None):
+        if svg_path and svg_path.exists():
             try:
                 gtk_image.set_from_file(str(svg_path))
                 gtk_image.set_pixel_size(pixel_size)
+                return
             except Exception as e:
                 sys.stderr.write(f"[Philotes] Error loading SVG {svg_path}: {e}\n")
+        if fallback_icon_name:
+            gtk_image.set_from_icon_name(fallback_icon_name)
+            gtk_image.set_pixel_size(pixel_size)
 
 
 def main():

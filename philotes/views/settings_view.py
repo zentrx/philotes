@@ -5,6 +5,7 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk
 from philotes.account_manager import AccountManager
 from philotes.auth import GCPAuthManager, parse_id_token
+from philotes.auth_nytimes import NYTimesLoginWindow
 from philotes.session_manager import SessionManager
 from philotes.components.account_card import AccountCardWidget
 
@@ -31,6 +32,13 @@ class SettingsView(Gtk.Box):
         header_title.set_markup("<span size='xx-large' weight='bold'>Settings &amp; Service Pools</span>")
         header_title.set_halign(Gtk.Align.START)
         main_vbox.append(header_title)
+
+        # Alert Banner Container
+        self.alert_banner = Gtk.Label()
+        self.alert_banner.add_css_class("settings-alert-banner")
+        self.alert_banner.set_halign(Gtk.Align.START)
+        self.alert_banner.set_visible(False)
+        main_vbox.append(self.alert_banner)
 
         # -------------------------------------------------------------
         # Google Service Pool
@@ -62,27 +70,76 @@ class SettingsView(Gtk.Box):
 
         main_vbox.append(google_sec_vbox)
 
+        # -------------------------------------------------------------
+        # New York Times Service Pool
+        # -------------------------------------------------------------
+        nyt_sec_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        nyt_sec_vbox.set_halign(Gtk.Align.START)
+
+        nyt_title = Gtk.Label()
+        nyt_title.set_markup("<span size='x-large' weight='bold'>New York Times Service Logins</span>")
+        nyt_title.set_halign(Gtk.Align.START)
+        nyt_sec_vbox.append(nyt_title)
+
+        nyt_desc = Gtk.Label(label="Authentication & Subscription for NYTimes Wordle and Games services.")
+        nyt_desc.add_css_class("section-desc")
+        nyt_desc.set_halign(Gtk.Align.START)
+        nyt_sec_vbox.append(nyt_desc)
+
+        self.nytimes_cards_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.nytimes_cards_vbox.set_halign(Gtk.Align.START)
+        nyt_sec_vbox.append(self.nytimes_cards_vbox)
+
+        add_nyt_user_btn = Gtk.Button(label="+ Add NYTimes Auth Card")
+        add_nyt_user_btn.add_css_class("add-account-btn")
+        add_nyt_user_btn.set_halign(Gtk.Align.START)
+        add_nyt_user_btn.connect("clicked", self._on_add_nytimes_card_clicked)
+        nyt_sec_vbox.append(add_nyt_user_btn)
+
+        main_vbox.append(nyt_sec_vbox)
+
         scrolled.set_child(main_vbox)
         self.append(scrolled)
 
         self.refresh_cards()
 
+    def show_alert_message(self, message: str):
+        if message:
+            self.alert_banner.set_text(f"⚠️ {message}")
+            self.alert_banner.set_visible(True)
+        else:
+            self.alert_banner.set_visible(False)
+
     def refresh_cards(self):
+        # Refresh Google Cards
         while child := self.cards_vbox.get_first_child():
             self.cards_vbox.remove(child)
 
-        # Get cards sorted by creation time: oldest at top, newest at bottom
-        cards = AccountManager.get_instance().get_cards(provider="google")
-
-        if not cards:
+        google_cards = AccountManager.get_instance().get_cards(provider="google")
+        if not google_cards:
             empty_label = Gtk.Label(label="No Auth Cards present in Google Service Pool. Click '+ Add Google Auth Card' below.")
             empty_label.add_css_class("section-desc")
             empty_label.set_halign(Gtk.Align.START)
             self.cards_vbox.append(empty_label)
         else:
-            for card_data in cards:
+            for card_data in google_cards:
                 card_widget = AccountCardWidget(card_data, on_state_changed_cb=self._on_card_state_changed)
                 self.cards_vbox.append(card_widget)
+
+        # Refresh NYTimes Cards
+        while child := self.nytimes_cards_vbox.get_first_child():
+            self.nytimes_cards_vbox.remove(child)
+
+        nyt_cards = AccountManager.get_instance().get_cards(provider="nytimes")
+        if not nyt_cards:
+            empty_nyt_label = Gtk.Label(label="No Auth Cards present in NYTimes Service Pool. Click '+ Add NYTimes Auth Card' below.")
+            empty_nyt_label.add_css_class("section-desc")
+            empty_nyt_label.set_halign(Gtk.Align.START)
+            self.nytimes_cards_vbox.append(empty_nyt_label)
+        else:
+            for card_data in nyt_cards:
+                card_widget = AccountCardWidget(card_data, on_state_changed_cb=self._on_card_state_changed)
+                self.nytimes_cards_vbox.append(card_widget)
 
     def _on_card_state_changed(self):
         self.refresh_cards()
@@ -134,3 +191,22 @@ class SettingsView(Gtk.Box):
                 self._on_card_state_changed()
 
             auth_mgr.start_pkce_login_async(callback=on_auth_finished)
+
+    def _on_add_nytimes_card_clicked(self, widget):
+        parent_win = self.get_root()
+        
+        def on_login_success(user_data):
+            AccountManager.get_instance().add_auth_card(
+                provider="nytimes",
+                display_name=user_data.get("display_name", "NYTimes User"),
+                username=user_data.get("username", "user@nytimes.com"),
+                profile_dir=user_data.get("profile_dir"),
+                subscribed=user_data.get("subscribed", True),
+            )
+            self.show_alert_message(None)
+            self._on_card_state_changed()
+
+        login_win = NYTimesLoginWindow(parent_window=parent_win, on_success_cb=on_login_success)
+        login_win.present()
+
+

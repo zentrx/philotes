@@ -94,7 +94,7 @@ class AccountManager:
                 return card
         return None
 
-    def add_auth_card(self, provider: str, display_name: str, username: str, profile_dir: str = None) -> dict:
+    def add_auth_card(self, provider: str, display_name: str, username: str, profile_dir: str = None, subscribed: bool = True) -> dict:
         timestamp_str = time.strftime("%Y-%m-%d %H:%M:%S")
         card_id = f"{provider}_{int(time.time() * 1000)}"
         if not profile_dir:
@@ -119,6 +119,7 @@ class AccountManager:
             "unread_count": 0,
             "active": True,
             "default": is_default,
+            "subscribed": subscribed,
             "profile_dir": profile_dir,
         }
 
@@ -126,6 +127,14 @@ class AccountManager:
         self._save_accounts()
         self._sync_default_symlink(provider)
         return new_card
+
+    def toggle_subscription(self, card_id: str, provider: str):
+        for card in self.accounts:
+            if card.get("provider") == provider and card.get("card_id") == card_id:
+                card["subscribed"] = not card.get("subscribed", True)
+                break
+        self._save_accounts()
+
 
     def set_active(self, card_id: str, provider: str):
         target_card = None

@@ -287,3 +287,31 @@ button#settings-button:hover {
     background-color: #7aa2f7;
     color: #1a1b26;
 }
+
+/* Blue Dot Notification Badge for Wordle Icon */
+.badge-blue-dot,
+label.badge-blue-dot,
+box.badge-blue-dot {
+    background-color: #7aa2f7;
+    border-radius: 50%;
+    min-width: 7px;
+    min-height: 7px;
+    font-size: 0px;
+    line-height: 0px;
+    padding: 0px;
+    margin: 0px;
+    margin-left: -5px;
+    margin-top: 3px;
+}
+
+/* Settings Alert Banner */
+.settings-alert-banner {
+    background-color: #3b242e;
+    border: 1px solid #f7768e;
+    border-radius: 2px;
+    color: #f7768e;
+    font-weight: bold;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+

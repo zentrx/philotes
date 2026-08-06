@@ -59,6 +59,17 @@ class AccountCardWidget(Gtk.Box):
             badge.add_css_class("badge")
             right_box.append(badge)
 
+        provider = account_data.get("provider")
+        if provider == "nytimes":
+            is_sub = account_data.get("subscribed", True)
+            sub_btn = Gtk.Button(label="✓ Subscribed" if is_sub else "✗ No Sub")
+            if is_sub:
+                sub_btn.add_css_class("card-default-btn-active")
+            else:
+                sub_btn.add_css_class("card-default-btn-inactive")
+            sub_btn.connect("clicked", self._on_sub_toggle_clicked)
+            right_box.append(sub_btn)
+
         # Default Toggle Button
         is_default = account_data.get("default", False)
         default_btn = Gtk.Button(label="★ Default" if is_default else "Make Default")
@@ -117,6 +128,15 @@ class AccountCardWidget(Gtk.Box):
         card_id = self.account_data.get("card_id")
         
         AccountManager.get_instance().set_active(card_id, provider)
+        
+        if self.on_state_changed_cb:
+            self.on_state_changed_cb()
+
+    def _on_sub_toggle_clicked(self, widget):
+        provider = self.account_data.get("provider")
+        card_id = self.account_data.get("card_id")
+        
+        AccountManager.get_instance().toggle_subscription(card_id, provider)
         
         if self.on_state_changed_cb:
             self.on_state_changed_cb()
