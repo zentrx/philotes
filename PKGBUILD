@@ -42,10 +42,10 @@ package() {
     install -Dm644 icons/greyscale/chat.svg "${pkgdir}/opt/philotes/icons/greyscale/chat.svg"
     install -Dm644 icons/hicolor/messages.svg "${pkgdir}/opt/philotes/icons/hicolor/messages.svg"
     install -Dm644 icons/greyscale/messages.svg "${pkgdir}/opt/philotes/icons/greyscale/messages.svg"
-    install -Dm644 icons/hicolor/wordle.svg "${pkgdir}/opt/philotes/icons/hicolor/wordle.svg"
-    install -Dm644 icons/greyscale/wordle.svg "${pkgdir}/opt/philotes/icons/greyscale/wordle.svg"
     install -Dm644 icons/hicolor/nytimes.svg "${pkgdir}/opt/philotes/icons/hicolor/nytimes.svg"
     install -Dm644 icons/greyscale/nytimes.svg "${pkgdir}/opt/philotes/icons/greyscale/nytimes.svg"
+    install -Dm644 icons/hicolor/wordle.svg "${pkgdir}/opt/philotes/icons/hicolor/wordle.svg"
+    install -Dm644 icons/greyscale/wordle.svg "${pkgdir}/opt/philotes/icons/greyscale/wordle.svg"
 
     # Stylesheet Themes
     install -Dm644 styles/dark-sharp.css "${pkgdir}/opt/philotes/styles/dark-sharp.css"

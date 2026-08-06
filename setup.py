@@ -13,6 +13,7 @@ setup(
             "philotes = philotes.main:main",
             "philo-chat = philotes.subapps.philo_chat:run_philo_chat_subprocess",
             "philo-msgs = philotes.subapps.philo_msgs:run_philo_msgs_subprocess",
+            "philo-wordle = philotes.subapps.philo_wordle:run_philo_wordle_subprocess",
         ],
     },
     python_requires=">=3.8",
