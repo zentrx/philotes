@@ -11,6 +11,7 @@ from gi.repository import Gtk, WebKit, GLib
 from philotes.process_utils import set_process_name
 from philotes.config import SUBAPP_WORDLE_NAME
 from philotes.session_manager import SessionManager
+from philotes.clipboard_bridge import enable_image_paste
 
 WORDLE_URL = "https://www.nytimes.com/games/wordle/index.html"
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -18,35 +19,60 @@ USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Ge
 CHECK_WORDLE_STATUS_JS = """
 (function() {
     try {
-        const todayStr = new Date().toISOString().slice(0, 10);
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = now.getMonth() + 1;
+        if (m < 10) { m = '0' + m; }
+        var d = now.getDate();
+        if (d < 10) { d = '0' + d; }
+        var localTodayStr = y + '-' + m + '-' + d;
 
-        const rawState = localStorage.getItem("nyt-wordle-state");
-        if (rawState) {
-            const state = JSON.parse(rawState);
-            const status = state.gameStatus || (state.stats && state.stats.gameStatus);
-            if (status === "WIN" || status === "FAIL" || status === "IN_PROGRESS_WON" || status === "IN_PROGRESS_LOST") {
-                return JSON.stringify({completed: true});
+        for (var i = 0; i < localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if (key && key.indexOf('games-state-wordle') !== -1) {
+                var raw = localStorage.getItem(key);
+                if (!raw) { continue; }
+                var val = JSON.parse(raw);
+                var stateData = null;
+                var printDate = null;
+
+                if (val && val.states && val.states.length > 0) {
+                    stateData = val.states[0].data || val.states[0];
+                    printDate = val.states[0].printDate || val.states[0].date;
+                } else if (val && (val.status || (val.game && val.game.status))) {
+                    stateData = val.game || val;
+                    printDate = val.printDate || val.date;
+                }
+
+                if (stateData) {
+                    var status = (stateData.status || '').toUpperCase();
+                    var isFinished = (status === 'WIN' || status === 'FAIL');
+                    
+                    var rowIndex = stateData.currentRowIndex || 0;
+                    var board = stateData.boardState || stateData.guesses || [];
+                    var hasGuesses = Array.isArray(board) && board.some(function(b) { return typeof b === 'string' && b.trim().length > 0; });
+
+                    if (rowIndex >= 6) {
+                        isFinished = true;
+                    }
+
+                    if (!printDate || printDate === localTodayStr) {
+                        if (isFinished) {
+                            return JSON.stringify({ completed: true, state: 'FINISHED', status: status, printDate: printDate });
+                        } else if (status === 'IN_PROGRESS' && (rowIndex > 0 || hasGuesses)) {
+                            return JSON.stringify({ completed: false, state: 'STARTED_UNFINISHED', status: status, printDate: printDate });
+                        } else {
+                            return JSON.stringify({ completed: false, state: 'NOT_STARTED', status: status, printDate: printDate });
+                        }
+                    } else {
+                        return JSON.stringify({ completed: false, state: 'NOT_STARTED', status: 'NOT_STARTED', printDate: localTodayStr });
+                    }
+                }
             }
-        }
-
-        const rawMoat = localStorage.getItem("nyt-wordle-moat");
-        if (rawMoat) {
-            const moat = JSON.parse(rawMoat);
-            const status = moat.gameStatus || moat.status;
-            if (status === "WIN" || status === "FAIL") {
-                return JSON.stringify({completed: true});
-            }
-        }
-
-        if (document.querySelector('button[data-testid="share-button"]') ||
-            document.querySelector('[data-testid="stats-dialog"]') ||
-            document.querySelector('game-stats') ||
-            document.querySelector('[class*="Stats-module"]') ||
-            document.querySelector('div[class*="countdown"]')) {
-            return JSON.stringify({completed: true});
         }
     } catch(e) {}
-    return JSON.stringify({completed: false});
+
+    return JSON.stringify({ completed: false, state: 'NOT_STARTED', status: 'UNKNOWN' });
 })();
 """
 
@@ -108,7 +134,7 @@ class PhiloWordleApp:
         self.ipc_write_fd = ipc_write_fd
         self.profile_id = profile_id
         self.username = username
-        self.wordle_completed = False
+        self.wordle_completed = None
 
         print(f"philo-wordle: initializing (profile={profile_id}, user={username})", flush=True)
 
@@ -128,6 +154,7 @@ class PhiloWordleApp:
 
         self.web_view = WebKit.WebView(network_session=self.network_session)
         self.web_view.set_settings(self.settings)
+        enable_image_paste(self.web_view)
 
         # Native WebKitGTK Ad-Blocking (UserStyleSheet + UserScript MutationObserver)
         self.user_content_manager = self.web_view.get_user_content_manager()

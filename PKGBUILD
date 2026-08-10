@@ -1,7 +1,7 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=4.1.0
-pkgrel=1
+pkgver=4.2.1
+pkgrel=2
 pkgdesc="Linux-first communication application container designed to run continuously on Arch Linux"
 arch=('any')
 url="https://github.com/philotes/philotes"

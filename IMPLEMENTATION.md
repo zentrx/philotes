@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v4.1.0)
+# Philotes Implementation Document (v4.2.1)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
@@ -9,10 +9,10 @@ This document provides a comprehensive overview of the currently implemented arc
 **Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with a minimal system resource footprint. It hosts modular sub-applications built on **GTK 4** and **WebKitGTK 6.0**. 
 
 Supported sub-applications:
-1. **Google Chat (`philo-chat`)**: Isolated webview container hosting Google Chat with real-time unread badge monitoring.
-2. **Google Messages (`philo-msgs`)**: Integrated webview container hosting Google Messages (`messages.google.com/web`) with persistent device pairing and unread SMS/MMS notifications.
+1. **Google Chat (`philo-chat`)**: Isolated webview container hosting Google Chat with real-time unread badge monitoring and universal image paste.
+2. **Google Messages (`philo-msgs`)**: Integrated webview container hosting Google Messages (`messages.google.com/web`) with persistent device pairing, unread SMS/MMS notifications, and universal image paste.
 3. **NYT Wordle (`philo-wordle`)**: Interactive NYT Wordle puzzle integration.
-4. **Google Keep (`philo-keep`)**: Integrated Google Keep note and task container with upcoming Reminders tracking.
+4. **Google Keep (`philo-keep`)**: Integrated Google Keep note and task container with upcoming Reminders tracking and universal image paste.
 
 ---
 
@@ -77,6 +77,12 @@ Supported sub-applications:
 - **Dynamic Tab States**:
   - **Active/Selected Tab**: Displays full-color icon (`icons/hicolor/<app>.svg`), visible text label, and inline unread count badge pill.
   - **Inactive/Unselected Tab**: Displays greyscale icon (`icons/greyscale/<app>.svg`), hides text label, and overlays unread badge directly over the top-right corner of the icon using `Gtk.Overlay`.
+
+### 2.6 Universal WebKit Image Paste Bridge (`philotes.clipboard_bridge`)
+- **WebKitGTK 6.0 Clipboard Fix**: WebKitGTK's native GTK platform clipboard implementation (`PasteboardGtk`) omits binary image streams from `ClipboardEvent.clipboardData` during native paste dispatch. `philotes.clipboard_bridge` intercepts paste key shortcuts (`Ctrl+V` and `Shift+Insert`) via `Gtk.EventControllerKey`.
+- **Gdk.Clipboard Extraction**: Asynchronously extracts image data (`Gdk.Texture` / PNG) from `Gdk.Clipboard`.
+- **DOM Synthetic Injection**: Base64 encodes PNG bytes and dispatches a synthetic `ClipboardEvent('paste')` populated with a `DataTransfer` holding a web `File` object (`pasted_image.png`) directly into the active editable element.
+- **Universal Default Activation**: Enabled by default across all sub-applications via `enable_image_paste(self.web_view)`.
 
 ### 2.6 Arch Linux Pacman Packaging
 - **`PKGBUILD`**: Complete Arch Linux PKGBUILD script specifying runtime dependencies (`python`, `python-gobject`, `webkitgtk-6.0`, `gtk4`, `hicolor-icon-theme`) and build dependencies (`python-setuptools`, `python-build`, `python-installer`, `python-wheel`).

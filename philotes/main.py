@@ -49,7 +49,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.unread_keep_count = 0
         self.chat_selected_title = None
         self.msgs_selected_title = None
-        self.wordle_completed = False
+        self.wordle_completed = True
         self.wordle_selected_title = None
 
         self._load_theme()
@@ -177,6 +177,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.wordle_overlay_badge.add_css_class("badge-blue-dot")
         self.wordle_overlay_badge.set_halign(Gtk.Align.END)
         self.wordle_overlay_badge.set_valign(Gtk.Align.START)
+        self.wordle_overlay_badge.set_visible(False)
         self.wordle_overlay.add_overlay(self.wordle_overlay_badge)
 
         self.wordle_label = Gtk.Label(label="Wordle")

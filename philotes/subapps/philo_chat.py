@@ -11,6 +11,7 @@ from gi.repository import Gtk, WebKit, GLib
 from philotes.process_utils import set_process_name
 from philotes.config import SUBAPP_CHAT_NAME
 from philotes.session_manager import SessionManager
+from philotes.clipboard_bridge import enable_image_paste
 
 GOOGLE_CHAT_URL = "https://chat.google.com/"
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -45,6 +46,7 @@ class PhiloChatApp:
 
         self.web_view = WebKit.WebView(network_session=self.network_session)
         self.web_view.set_settings(self.settings)
+        enable_image_paste(self.web_view)
 
         try:
             gi.require_version("Gdk", "4.0")

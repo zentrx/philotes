@@ -1,4 +1,4 @@
-# Philotes (v4.1.0)
+# Philotes (v4.2.1)
 
 **Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **NYT Wordle** (`philo-wordle`), and **Google Keep** (`philo-keep`).
 
