@@ -1,6 +1,6 @@
-# Philotes (v5.0.0)
+# Philotes (v5.2.1)
 
-**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **Google Keep** (`philo-keep`), **Google Tasks** (`philo-tasks`), and **NYT Wordle** (`philo-wordle`).
+**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **Google Tasks** (`philo-tasks`), **Google Keep** (`philo-keep`), and **NYT Wordle** (`philo-wordle`).
 
 ---
 
@@ -8,10 +8,22 @@
 
 - **Process Isolation & OS Identification (`btop`/`htop`)**:
   - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, `philo-msgs`, `philo-keep`, `philo-tasks`, and `philo-wordle`.
-- **Top Bar & Dynamic Tabs**:
-  - Modern header bar featuring active expanded tabs (color icon + label + unread/reminder/task badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
+- **Top Bar & Dynamic Reorderable Tabs**:
+  - Double-click tab header to refresh: double-clicking any tab header triggers an instant page refresh/reload using native Linux `Gtk.GestureClick` and system double-click threshold.
+  - Drag-and-drop tab reordering when tabs are active, allowing customized arrangements.
+  - Persistent tab order saved in `~/.config/philotes/settings.json` across application restarts.
+  - Reset Tab Order button in Settings to return to default (`Chat`, `Messages`, `Tasks`, `Keep`, `Wordle`).
+  - Active expanded tabs (color icon + label + unread/reminder/task badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
   - Background webviews remain mounted in memory for instant tab switching.
-- **Single Sign-On & Profile Session Pools**:
+- **Service Pool Tab Enable/Disable & Memory Teardown**:
+  - App-wide tab availability controlled per Service Pool in Settings (`google` and `nytimes` pools).
+  - Disabled tabs release all memory (WebKit views, DOM polling timers, and IPC channels torn down) and hide from the top bar.
+  - Re-enabled tabs automatically restore into their original position in the top bar and mount in the background.
+- **Master-Detail Responsive Settings & Profile Pools**:
+  - Master-Detail sidebar architecture with collapsible icon-rail mode (52px rail with `☰` toggle) optimized for mobile and thin-column displays (~380px–500px).
+  - Extensible modular category registry (`Google`, `NYTimes`, `Tab Layout`, `System`).
+  - Fluid-width vertical block Auth Cards with real-time active status pills, default promotion, deletion confirmation, and subscription controls.
+  - Unified configuration hub (`SettingsManager`) coordinating non-account UI preferences and authentication service pools.
   - Shared WebKit 6.0 `NetworkSession` with SQLite persistent cookie database (`cookies.sqlite`) across service pools.
   - Symlink-based default profile manager (`profiles/google-default` -> `google-user1`).
 - **GCP OAuth 2.0 PKCE Authorization**:

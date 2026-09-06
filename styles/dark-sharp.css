@@ -127,18 +127,34 @@ button.tab-button-inactive:hover {
 button#settings-button {
     background-color: #1f2335;
     background-image: none;
-    border: 1px solid #2f3549;
+    border: 1px solid #24283b;
     border-radius: 2px;
     color: #7aa2f7;
-    padding: 6px 10px;
+    padding: 6px;
+    min-width: 40px;
+    min-height: 40px;
     box-shadow: none;
+    margin-right: 0;
 }
 
 #settings-button:hover,
 button#settings-button:hover {
+    background-color: #24283b;
+    border-color: #2f3549;
+    color: #c0caf5;
+}
+
+#settings-button.tab-button-active,
+button#settings-button.tab-button-active {
     background-color: #292e42;
-    border-color: #3b4261;
-    color: #7aa2f7;
+    background-image: none;
+    border: 1px solid #3b4261;
+    border-top: 2px solid #7aa2f7;
+    border-radius: 2px;
+    color: #c0caf5;
+    padding: 6px;
+    min-width: 40px;
+    min-height: 40px;
 }
 
 #content-stack {
@@ -175,8 +191,8 @@ button#settings-button:hover {
 /* Account Card Styling */
 #account-card,
 .account-card {
-    min-width: 540px;
-    padding: 14px 18px;
+    min-width: 0;
+    padding: 12px 14px;
     border-radius: 2px;
     transition: all 150ms ease-in-out;
 }
@@ -197,6 +213,24 @@ button#settings-button:hover {
     background-color: #24283b;
     border: 2px solid #7aa2f7;
     box-shadow: 0 0 10px rgba(122, 162, 247, 0.4);
+}
+
+.card-active-pill {
+    background-color: #9ece6a;
+    color: #1a1b26;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 2px;
+    padding: 2px 6px;
+}
+
+.card-inactive-pill {
+    background-color: #24283b;
+    color: #565f89;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 2px;
+    padding: 2px 6px;
 }
 
 .card-username {
@@ -324,4 +358,201 @@ box.badge-blue-dot {
     padding: 12px 16px;
     margin-bottom: 16px;
 }
+
+/* Tab Drag-and-Drop Reordering Indicators */
+.tab-dragging {
+    opacity: 0.45;
+}
+
+button.tab-button.tab-drop-before,
+.tab-drop-before {
+    border-left: 3px solid #7aa2f7;
+}
+
+button.tab-button.tab-drop-after,
+.tab-drop-after {
+    border-right: 3px solid #7aa2f7;
+}
+
+/* Reset Tab Order Button & Status in Settings */
+.reset-tabs-btn {
+    background-color: #24283b;
+    background-image: none;
+    border: 1px solid #3b4261;
+    border-radius: 2px;
+    color: #7aa2f7;
+    font-weight: bold;
+    padding: 8px 16px;
+    margin-top: 4px;
+    transition: all 150ms ease-in-out;
+}
+
+.reset-tabs-btn:hover {
+    background-color: #2f3549;
+    border-color: #7aa2f7;
+    color: #c0caf5;
+}
+
+.reset-status-label {
+    color: #7aa2f7;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+/* Service Pool Controlled Tabs List & Toggles */
+.service-tabs-list {
+    background-color: #1a1b26;
+    border: 1px solid #24283b;
+    border-radius: 2px;
+    padding: 8px;
+    min-width: 0;
+}
+
+.service-tab-row {
+    background-color: #1f2335;
+    border: 1px solid #24283b;
+    border-radius: 2px;
+    padding: 8px 14px;
+    margin-bottom: 4px;
+}
+
+.service-tab-row:hover {
+    background-color: #24283b;
+    border-color: #2f3549;
+}
+
+.service-tab-label {
+    color: #c0caf5;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.service-tab-badge-enabled {
+    background-color: #9ece6a;
+    color: #1a1b26;
+    font-size: 11px;
+    font-weight: 800;
+    border-radius: 2px;
+    padding: 2px 8px;
+}
+
+.service-tab-badge-disabled {
+    background-color: #24283b;
+    color: #565f89;
+    font-size: 11px;
+    font-weight: bold;
+    border-radius: 2px;
+    padding: 2px 8px;
+}
+
+.service-tab-toggle-btn {
+    background-image: none;
+    border-radius: 2px;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 12px;
+}
+
+.service-tab-btn-disable {
+    background-color: #24283b;
+    border: 1px solid #3b4261;
+    color: #f7768e;
+}
+
+.service-tab-btn-disable:hover {
+    background-color: #f7768e;
+    border-color: #f7768e;
+    color: #1a1b26;
+}
+
+.service-tab-btn-enable {
+    background-color: #7aa2f7;
+    border: 1px solid #7aa2f7;
+    color: #1a1b26;
+}
+
+.service-tab-btn-enable:hover {
+    background-color: #89b4fa;
+    border-color: #89b4fa;
+    color: #1a1b26;
+}
+
+/* Master-Detail Settings View Styling */
+.settings-sidebar {
+    background-color: #16161e;
+    border-right: 1px solid #24283b;
+    padding: 12px 6px;
+}
+
+.settings-sidebar-toggle-btn {
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid #24283b;
+    border-radius: 2px;
+    color: #7aa2f7;
+    font-size: 14px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+}
+
+.settings-sidebar-toggle-btn:hover {
+    background-color: #24283b;
+    border-color: #7aa2f7;
+    color: #c0caf5;
+}
+
+.sidebar-category-btn {
+    background-color: transparent;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    padding: 8px 8px;
+    margin-bottom: 4px;
+    transition: all 120ms ease-in-out;
+}
+
+.sidebar-category-btn:hover {
+    background-color: #1f2335;
+    border-color: #2f3549;
+}
+
+.sidebar-category-btn-active {
+    background-color: #24283b;
+    border-color: #7aa2f7;
+}
+
+.sidebar-category-btn-active label {
+    color: #7aa2f7;
+    font-weight: bold;
+}
+
+.sidebar-category-icon {
+    font-size: 16px;
+}
+
+.sidebar-category-label {
+    font-size: 13px;
+    color: #a9b1d6;
+}
+
+/* Grouped Content Cards in Detail Pane */
+.settings-group-card {
+    background-color: #1a1b26;
+    border: 1px solid #24283b;
+    border-radius: 2px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.settings-meta-item {
+    font-size: 12px;
+    color: #7aa2f7;
+}
+
+.settings-meta-value {
+    font-size: 12px;
+    color: #c0caf5;
+    font-family: monospace;
+}
+
 

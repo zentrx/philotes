@@ -1,6 +1,6 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=5.0.0
+pkgver=5.2.1
 pkgrel=1
 pkgdesc="Linux-first communication application container designed to run continuously on Arch Linux"
 arch=('any')

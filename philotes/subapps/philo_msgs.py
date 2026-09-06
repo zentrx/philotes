@@ -64,7 +64,7 @@ class PhiloMsgsApp:
         self.web_view.connect("load-failed", self._on_load_failed)
         self.web_view.connect("web-process-terminated", self._on_web_process_terminated)
 
-        GLib.timeout_add_seconds(2, self._poll_dom_timer)
+        self.poll_timer_id = GLib.timeout_add_seconds(2, self._poll_dom_timer)
 
         self.load_google_msgs()
 
@@ -262,6 +262,31 @@ class PhiloMsgsApp:
                 print("philo-msgs: ----------------------------------------", flush=True)
                 print(f"philo-msgs: IPC write error: {e}", flush=True)
                 print("philo-msgs: ----------------------------------------", flush=True)
+
+    def reload(self):
+        if hasattr(self, "web_view") and self.web_view:
+            self.web_view.reload()
+
+    def cleanup(self):
+        if getattr(self, "poll_timer_id", None):
+            try:
+                GLib.source_remove(self.poll_timer_id)
+            except Exception:
+                pass
+            self.poll_timer_id = None
+        if hasattr(self, "web_view") and self.web_view:
+            try:
+                self.web_view.stop_loading()
+                self.web_view.load_uri("about:blank")
+            except Exception:
+                pass
+            self.web_view = None
+        if self.ipc_write_fd is not None:
+            try:
+                os.close(self.ipc_write_fd)
+            except Exception:
+                pass
+            self.ipc_write_fd = None
 
     def get_widget(self):
         return self.web_view

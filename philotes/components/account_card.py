@@ -7,7 +7,7 @@ from philotes.account_manager import AccountManager
 
 class AccountCardWidget(Gtk.Box):
     def __init__(self, account_data: dict, on_state_changed_cb=None):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         self.account_data = account_data
         self.on_state_changed_cb = on_state_changed_cb
         self.is_confirming_delete = False
@@ -15,73 +15,77 @@ class AccountCardWidget(Gtk.Box):
         self.set_name("account-card")
         self._apply_border_style()
 
-        # Left Delete Button Box
-        self.left_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.left_box.set_valign(Gtk.Align.START)
-        self._render_left_delete_buttons()
-        self.append(self.left_box)
-
-        # Center Info VBox
-        info_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        info_vbox.set_hexpand(True)
-
         display_name = account_data.get("display_name", "Google User")
         username = account_data.get("username", "user@gmail.com")
         created_at = account_data.get("created_at", "Unknown")
         unread_count = account_data.get("unread_count", 0)
+        is_active = account_data.get("active", False)
+        is_default = account_data.get("default", False)
+        provider = account_data.get("provider")
 
-        # Name Label
+        # 1. Header Row (Name + Active status pill + Unread badge)
+        header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        header_box.set_hexpand(True)
+
         name_label = Gtk.Label()
         name_label.set_markup(f"<span weight='bold' size='large'>{display_name}</span>")
         name_label.set_halign(Gtk.Align.START)
-
-        # Username / Email Label
-        user_label = Gtk.Label(label=username)
-        user_label.add_css_class("card-username")
-        user_label.set_halign(Gtk.Align.START)
-
-        # Created At Label
-        time_label = Gtk.Label(label=f"Created: {created_at}")
-        time_label.add_css_class("card-time")
-        time_label.set_halign(Gtk.Align.START)
-
-        info_vbox.append(name_label)
-        info_vbox.append(user_label)
-        info_vbox.append(time_label)
-        self.append(info_vbox)
-
-        # Right Status & Default Toggle Box
-        right_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        right_box.set_valign(Gtk.Align.START)
+        name_label.set_hexpand(True)
+        header_box.append(name_label)
 
         if unread_count > 0:
             badge = Gtk.Label(label=f"{unread_count} unread")
             badge.add_css_class("badge")
-            right_box.append(badge)
+            header_box.append(badge)
 
-        provider = account_data.get("provider")
+        status_pill = Gtk.Label(label="● Active" if is_active else "Inactive")
+        status_pill.add_css_class("card-active-pill" if is_active else "card-inactive-pill")
+        header_box.append(status_pill)
+        self.append(header_box)
+
+        # 2. Middle Info Row (Username + Created At)
+        info_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        info_vbox.set_halign(Gtk.Align.START)
+
+        user_label = Gtk.Label(label=username)
+        user_label.add_css_class("card-username")
+        user_label.set_halign(Gtk.Align.START)
+
+        time_label = Gtk.Label(label=f"Created: {created_at}")
+        time_label.add_css_class("card-time")
+        time_label.set_halign(Gtk.Align.START)
+
+        info_vbox.append(user_label)
+        info_vbox.append(time_label)
+        self.append(info_vbox)
+
+        # 3. Actions Row (Delete button left, Default & Sub buttons right)
+        actions_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        actions_box.set_hexpand(True)
+
+        self.left_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.left_box.set_halign(Gtk.Align.START)
+        self._render_left_delete_buttons()
+        actions_box.append(self.left_box)
+
+        right_actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        right_actions.set_halign(Gtk.Align.END)
+        right_actions.set_hexpand(True)
+
         if provider == "nytimes":
             is_sub = account_data.get("subscribed", True)
             sub_btn = Gtk.Button(label="✓ Subscribed" if is_sub else "✗ No Sub")
-            if is_sub:
-                sub_btn.add_css_class("card-default-btn-active")
-            else:
-                sub_btn.add_css_class("card-default-btn-inactive")
+            sub_btn.add_css_class("card-default-btn-active" if is_sub else "card-default-btn-inactive")
             sub_btn.connect("clicked", self._on_sub_toggle_clicked)
-            right_box.append(sub_btn)
+            right_actions.append(sub_btn)
 
-        # Default Toggle Button
-        is_default = account_data.get("default", False)
         default_btn = Gtk.Button(label="★ Default" if is_default else "Make Default")
-        if is_default:
-            default_btn.add_css_class("card-default-btn-active")
-        else:
-            default_btn.add_css_class("card-default-btn-inactive")
-        
+        default_btn.add_css_class("card-default-btn-active" if is_default else "card-default-btn-inactive")
         default_btn.connect("clicked", self._on_default_toggle_clicked)
-        right_box.append(default_btn)
+        right_actions.append(default_btn)
 
-        self.append(right_box)
+        actions_box.append(right_actions)
+        self.append(actions_box)
 
         # Click Controller on Card Body for Active Toggling
         gesture = Gtk.GestureClick()

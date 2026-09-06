@@ -192,7 +192,7 @@ class PhiloWordleApp:
         self.web_view.connect("web-process-terminated", self._on_web_process_terminated)
 
         self.load_wordle()
-        GLib.timeout_add(2000, self._periodic_completion_check)
+        self.completion_timer_id = GLib.timeout_add(2000, self._periodic_completion_check)
 
     def _periodic_completion_check(self):
         self._check_wordle_completion()
@@ -273,6 +273,31 @@ class PhiloWordleApp:
                 os.write(self.ipc_write_fd, line.encode("utf-8"))
             except Exception as e:
                 print(f"philo-wordle: IPC write error: {e}", flush=True)
+
+    def reload(self):
+        if hasattr(self, "web_view") and self.web_view:
+            self.web_view.reload()
+
+    def cleanup(self):
+        if getattr(self, "completion_timer_id", None):
+            try:
+                GLib.source_remove(self.completion_timer_id)
+            except Exception:
+                pass
+            self.completion_timer_id = None
+        if hasattr(self, "web_view") and self.web_view:
+            try:
+                self.web_view.stop_loading()
+                self.web_view.load_uri("about:blank")
+            except Exception:
+                pass
+            self.web_view = None
+        if self.ipc_write_fd is not None:
+            try:
+                os.close(self.ipc_write_fd)
+            except Exception:
+                pass
+            self.ipc_write_fd = None
 
     def get_widget(self):
         return self.web_view

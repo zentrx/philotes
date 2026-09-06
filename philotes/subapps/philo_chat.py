@@ -134,6 +134,25 @@ class PhiloChatApp:
                 print(f"philo-chat: IPC write error: {e}", flush=True)
                 print("philo-chat: ----------------------------------------", flush=True)
 
+    def reload(self):
+        if hasattr(self, "web_view") and self.web_view:
+            self.web_view.reload()
+
+    def cleanup(self):
+        if hasattr(self, "web_view") and self.web_view:
+            try:
+                self.web_view.stop_loading()
+                self.web_view.load_uri("about:blank")
+            except Exception:
+                pass
+            self.web_view = None
+        if self.ipc_write_fd is not None:
+            try:
+                os.close(self.ipc_write_fd)
+            except Exception:
+                pass
+            self.ipc_write_fd = None
+
     def get_widget(self):
         return self.web_view
 
