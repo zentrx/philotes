@@ -1,15 +1,15 @@
-# Philotes (v4.2.1)
+# Philotes (v5.0.0)
 
-**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **NYT Wordle** (`philo-wordle`), and **Google Keep** (`philo-keep`).
+**Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **Google Keep** (`philo-keep`), **Google Tasks** (`philo-tasks`), and **NYT Wordle** (`philo-wordle`).
 
 ---
 
 ## Features
 
 - **Process Isolation & OS Identification (`btop`/`htop`)**:
-  - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, `philo-msgs`, `philo-wordle`, and `philo-keep`.
+  - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, `philo-msgs`, `philo-keep`, `philo-tasks`, and `philo-wordle`.
 - **Top Bar & Dynamic Tabs**:
-  - Modern header bar featuring active expanded tabs (color icon + label + unread/reminder badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
+  - Modern header bar featuring active expanded tabs (color icon + label + unread/reminder/task badge) and collapsed inactive tabs (greyscale icon + overlayed badge).
   - Background webviews remain mounted in memory for instant tab switching.
 - **Single Sign-On & Profile Session Pools**:
   - Shared WebKit 6.0 `NetworkSession` with SQLite persistent cookie database (`cookies.sqlite`) across service pools.
@@ -52,7 +52,11 @@ philotes
    - Opens Google Keep (`keep.google.com`) sharing the active Google Auth Card profile.
    - Tracks upcoming Keep Reminders and displays live reminder count badges.
 
-3. **GCP OAuth Setup (Settings ⚙)**:
+4. **Google Tasks (`philo-tasks`)**:
+   - Opens Google Tasks (`tasks.google.com`) sharing the active Google Auth Card profile.
+   - Monitors pending task counts live and displays task count badges in the top bar.
+
+5. **GCP OAuth Setup (Settings ⚙)**:
    - Download your Desktop Application OAuth client key from Google Cloud Console.
    - Copy to `~/.config/philotes/client_secret.json`.
    - Open Settings in Philotes and click **Sign in with Google (GCP OAuth)**.

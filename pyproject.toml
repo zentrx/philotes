@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "philotes"
-version = "4.2.1"
+version = "5.0.0"
 
 
 description = "Linux-First Communication Application Container"
@@ -20,4 +20,5 @@ philotes = "philotes.main:main"
 philo-chat = "philotes.subapps.philo_chat:run_philo_chat_subprocess"
 philo-msgs = "philotes.subapps.philo_msgs:run_philo_msgs_subprocess"
 philo-keep = "philotes.subapps.philo_keep:run_philo_keep_subprocess"
+philo-tasks = "philotes.subapps.philo_tasks:run_philo_tasks_subprocess"
 

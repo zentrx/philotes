@@ -6,6 +6,7 @@ SUBAPP_CHAT_NAME = "philo-chat"
 SUBAPP_MSGS_NAME = "philo-msgs"
 SUBAPP_WORDLE_NAME = "philo-wordle"
 SUBAPP_KEEP_NAME = "philo-keep"
+SUBAPP_TASKS_NAME = "philo-tasks"
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -35,6 +36,8 @@ ICON_HICOLOR_WORDLE = _resolve_asset_path("icons/hicolor/wordle.svg")
 ICON_GREYSCALE_WORDLE = _resolve_asset_path("icons/greyscale/wordle.svg")
 ICON_HICOLOR_KEEP = _resolve_asset_path("icons/hicolor/keep.svg")
 ICON_GREYSCALE_KEEP = _resolve_asset_path("icons/greyscale/keep.svg")
+ICON_HICOLOR_TASKS = _resolve_asset_path("icons/hicolor/tasks.svg")
+ICON_GREYSCALE_TASKS = _resolve_asset_path("icons/greyscale/tasks.svg")
 ICON_HICOLOR_PHILOTES = _resolve_asset_path("icons/hicolor/philotes.svg")
 ICON_GREYSCALE_PHILOTES = _resolve_asset_path("icons/greyscale/philotes.svg")
 

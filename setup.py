@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(
     name="philotes",
-    version="4.2.1",
+    version="5.0.0",
 
 
     description="Linux-First Communication Application Container",
@@ -15,6 +15,7 @@ setup(
             "philo-msgs = philotes.subapps.philo_msgs:run_philo_msgs_subprocess",
             "philo-wordle = philotes.subapps.philo_wordle:run_philo_wordle_subprocess",
             "philo-keep = philotes.subapps.philo_keep:run_philo_keep_subprocess",
+            "philo-tasks = philotes.subapps.philo_tasks:run_philo_tasks_subprocess",
         ],
     },
     python_requires=">=3.8",

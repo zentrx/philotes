@@ -1,7 +1,7 @@
 # Maintainer: Philotes Team <zntrx@archlinux>
 pkgname=philotes
-pkgver=4.2.1
-pkgrel=2
+pkgver=5.0.0
+pkgrel=1
 pkgdesc="Linux-first communication application container designed to run continuously on Arch Linux"
 arch=('any')
 url="https://github.com/philotes/philotes"
@@ -25,6 +25,7 @@ package() {
     ln -s /opt/philotes/bin/philo-chat "${pkgdir}/usr/bin/philo-chat"
     ln -s /opt/philotes/bin/philo-msgs "${pkgdir}/usr/bin/philo-msgs"
     ln -s /opt/philotes/bin/philo-keep "${pkgdir}/usr/bin/philo-keep"
+    ln -s /opt/philotes/bin/philo-tasks "${pkgdir}/usr/bin/philo-tasks"
 
     # Register /opt/philotes site-packages path in system Python
     _pyver=$(python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -49,6 +50,8 @@ package() {
     install -Dm644 icons/greyscale/wordle.svg "${pkgdir}/opt/philotes/icons/greyscale/wordle.svg"
     install -Dm644 icons/hicolor/keep.svg "${pkgdir}/opt/philotes/icons/hicolor/keep.svg"
     install -Dm644 icons/greyscale/keep.svg "${pkgdir}/opt/philotes/icons/greyscale/keep.svg"
+    install -Dm644 icons/hicolor/tasks.svg "${pkgdir}/opt/philotes/icons/hicolor/tasks.svg"
+    install -Dm644 icons/greyscale/tasks.svg "${pkgdir}/opt/philotes/icons/greyscale/tasks.svg"
 
     # Stylesheet Themes
     install -Dm644 styles/dark-sharp.css "${pkgdir}/opt/philotes/styles/dark-sharp.css"

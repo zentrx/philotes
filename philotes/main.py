@@ -18,6 +18,8 @@ from philotes.config import (
     ICON_GREYSCALE_WORDLE,
     ICON_HICOLOR_KEEP,
     ICON_GREYSCALE_KEEP,
+    ICON_HICOLOR_TASKS,
+    ICON_GREYSCALE_TASKS,
     ICON_HICOLOR_PHILOTES,
     ICON_GREYSCALE_PHILOTES,
     THEME_CSS_PATH,
@@ -26,6 +28,7 @@ from philotes.subapps.philo_chat import PhiloChatApp
 from philotes.subapps.philo_msgs import PhiloMsgsApp
 from philotes.subapps.philo_wordle import PhiloWordleApp
 from philotes.subapps.philo_keep import PhiloKeepApp
+from philotes.subapps.philo_tasks import PhiloTasksApp
 from philotes.account_manager import AccountManager
 from philotes.views.settings_view import SettingsView
 from philotes.components.splash_view import SplashView
@@ -47,6 +50,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.unread_chat_count = 0
         self.unread_msgs_count = 0
         self.unread_keep_count = 0
+        self.unread_tasks_count = 0
         self.chat_selected_title = None
         self.msgs_selected_title = None
         self.wordle_completed = True
@@ -161,6 +165,38 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.keep_tab_button.set_child(self.keep_tab_box)
         self.tabs_box.append(self.keep_tab_button)
 
+        # Tasks Tab Button
+        self.tasks_tab_button = Gtk.Button()
+        self.tasks_tab_button.connect("clicked", self._on_tasks_tab_clicked)
+
+        self.tasks_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.tasks_tab_box.set_halign(Gtk.Align.CENTER)
+        self.tasks_tab_box.set_valign(Gtk.Align.CENTER)
+        self.tasks_overlay = Gtk.Overlay()
+        self.tasks_icon_img = Gtk.Image()
+        self.tasks_icon_img.add_css_class("tab-icon-img")
+        self.tasks_overlay.set_child(self.tasks_icon_img)
+
+        self.tasks_overlay_badge = Gtk.Label(label="")
+        self.tasks_overlay_badge.add_css_class("badge")
+        self.tasks_overlay_badge.add_css_class("badge-overlay")
+        self.tasks_overlay_badge.set_halign(Gtk.Align.END)
+        self.tasks_overlay_badge.set_valign(Gtk.Align.START)
+        self.tasks_overlay.add_overlay(self.tasks_overlay_badge)
+
+        self.tasks_label = Gtk.Label(label="Tasks")
+        self.tasks_label.add_css_class("tab-label")
+
+        self.tasks_badge = Gtk.Label(label="")
+        self.tasks_badge.add_css_class("badge")
+        self.tasks_badge.add_css_class("badge-hidden")
+
+        self.tasks_tab_box.append(self.tasks_overlay)
+        self.tasks_tab_box.append(self.tasks_label)
+        self.tasks_tab_box.append(self.tasks_badge)
+        self.tasks_tab_button.set_child(self.tasks_tab_box)
+        self.tabs_box.append(self.tasks_tab_button)
+
         # Wordle Tab Button
         self.wordle_tab_button = Gtk.Button()
         self.wordle_tab_button.connect("clicked", self._on_wordle_tab_clicked)
@@ -218,6 +254,7 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._init_msgs_view()
         self._init_wordle_view()
         self._init_keep_view()
+        self._init_tasks_view()
 
         self.settings_view = SettingsView(on_accounts_changed_cb=self._on_accounts_changed)
         self.stack.add_named(self.settings_view, "settings")
@@ -310,12 +347,34 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             self.stack.add_named(keep_widget, "keep")
             GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
 
+    def _init_tasks_view(self):
+        active_card = AccountManager.get_instance().get_active_card("google")
+        
+        if existing := self.stack.get_child_by_name("tasks"):
+            self.stack.remove(existing)
+
+        if active_card is None:
+            self.tasks_app = None
+            self.unread_tasks_count = 0
+            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, "tasks")
+        else:
+            profile_id = active_card.get("profile_dir")
+            username = active_card.get("username")
+            self.unread_tasks_count = active_card.get("unread_count", 0)
+            read_fd, write_fd = os.pipe()
+            self.tasks_app = PhiloTasksApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+            tasks_widget = self.tasks_app.get_widget()
+            self.stack.add_named(tasks_widget, "tasks")
+            GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+
     def _on_accounts_changed(self):
         self._init_chat_view()
         self._init_msgs_view()
         self._init_wordle_view()
         self._init_keep_view()
-        if self.current_tab in ("chat", "msgs", "wordle", "keep"):
+        self._init_tasks_view()
+        if self.current_tab in ("chat", "msgs", "wordle", "keep", "tasks"):
             self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
 
@@ -360,6 +419,8 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                                 self.unread_chat_count = count
                             elif app_name == "keep":
                                 self.unread_keep_count = count
+                            elif app_name == "tasks":
+                                self.unread_tasks_count = count
 
                         if "completed" in msg and app_name == "wordle":
                             self.wordle_completed = msg.get("completed", False)
@@ -409,6 +470,12 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_tab_ui()
         self._update_header_title()
 
+    def _on_tasks_tab_clicked(self, widget=None):
+        self.current_tab = "tasks"
+        self.stack.set_visible_child_name("tasks")
+        self._update_tab_ui()
+        self._update_header_title()
+
     def _on_wordle_tab_clicked(self, widget=None):
         active_card = AccountManager.get_instance().get_active_card("nytimes")
         if active_card is None:
@@ -446,6 +513,9 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             selected_title = self.wordle_selected_title
         elif self.current_tab == "keep":
             tab_name = "Keep"
+            selected_title = None
+        elif self.current_tab == "tasks":
+            tab_name = "Tasks"
             selected_title = None
         elif self.current_tab == "settings":
             tab_name = "Settings"
@@ -577,6 +647,38 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                 self.keep_overlay_badge.set_text("")
                 self.keep_overlay_badge.add_css_class("badge-hidden")
                 self.keep_overlay_badge.set_visible(False)
+
+        # Tasks tab styling
+        if self.current_tab == "tasks":
+            self.tasks_tab_button.remove_css_class("tab-button-inactive")
+            self.tasks_tab_button.add_css_class("tab-button")
+            self.tasks_tab_button.add_css_class("tab-button-active")
+            self._set_image_from_svg(self.tasks_icon_img, ICON_HICOLOR_TASKS)
+            self.tasks_label.set_visible(True)
+            self.tasks_overlay_badge.set_visible(False)
+            if self.unread_tasks_count > 0:
+                self.tasks_badge.set_text(str(self.unread_tasks_count))
+                self.tasks_badge.remove_css_class("badge-hidden")
+                self.tasks_badge.set_visible(True)
+            else:
+                self.tasks_badge.set_text("")
+                self.tasks_badge.add_css_class("badge-hidden")
+                self.tasks_badge.set_visible(False)
+        else:
+            self.tasks_tab_button.remove_css_class("tab-button-active")
+            self.tasks_tab_button.add_css_class("tab-button")
+            self.tasks_tab_button.add_css_class("tab-button-inactive")
+            self._set_image_from_svg(self.tasks_icon_img, ICON_GREYSCALE_TASKS)
+            self.tasks_label.set_visible(False)
+            self.tasks_badge.set_visible(False)
+            if self.unread_tasks_count > 0:
+                self.tasks_overlay_badge.set_text(str(self.unread_tasks_count))
+                self.tasks_overlay_badge.remove_css_class("badge-hidden")
+                self.tasks_overlay_badge.set_visible(True)
+            else:
+                self.tasks_overlay_badge.set_text("")
+                self.tasks_overlay_badge.add_css_class("badge-hidden")
+                self.tasks_overlay_badge.set_visible(False)
 
     def _set_image_from_svg(self, gtk_image, svg_path, pixel_size=28, fallback_icon_name=None):
         if svg_path and svg_path.exists():

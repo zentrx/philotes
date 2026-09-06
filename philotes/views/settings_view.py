@@ -51,7 +51,7 @@ class SettingsView(Gtk.Box):
         sec_title.set_halign(Gtk.Align.START)
         google_sec_vbox.append(sec_title)
 
-        sec_desc = Gtk.Label(label="GCP OAuth 2.0 PKCE authentication for Google Chat, Google Messages, and Workspace services.")
+        sec_desc = Gtk.Label(label="GCP OAuth 2.0 PKCE authentication for Google Chat, Google Messages, Google Keep, Google Tasks, and Workspace services.")
         sec_desc.add_css_class("section-desc")
         sec_desc.set_halign(Gtk.Align.START)
         google_sec_vbox.append(sec_desc)
