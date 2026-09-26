@@ -471,6 +471,10 @@ class SettingsView(Gtk.Box):
         else:
             self.alert_banner.set_visible(False)
 
+    def reload(self):
+        self._select_category("google")
+        self.refresh_cards()
+
     def refresh_cards(self):
         # Refresh Google Cards
         while child := self.cards_vbox.get_first_child():

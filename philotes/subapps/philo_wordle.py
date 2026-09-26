@@ -202,6 +202,9 @@ class PhiloWordleApp:
         print(f"philo-wordle: web process crashed (reason={reason}), reloading", flush=True)
         web_view.reload()
 
+    def load_initial_url(self):
+        self.load_wordle()
+
     def load_wordle(self):
         print(f"philo-wordle: loading {WORDLE_URL}", flush=True)
         self.web_view.load_uri(WORDLE_URL)
@@ -276,7 +279,7 @@ class PhiloWordleApp:
 
     def reload(self):
         if hasattr(self, "web_view") and self.web_view:
-            self.web_view.reload()
+            self.load_initial_url()
 
     def cleanup(self):
         if getattr(self, "completion_timer_id", None):

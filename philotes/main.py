@@ -30,7 +30,7 @@ from philotes.subapps.philo_wordle import PhiloWordleApp
 from philotes.subapps.philo_keep import PhiloKeepApp
 from philotes.subapps.philo_tasks import PhiloTasksApp
 from philotes.account_manager import AccountManager
-from philotes.settings_manager import SettingsManager
+from philotes.settings_manager import SettingsManager, TAB_METADATA
 from philotes.views.settings_view import SettingsView
 from philotes.components.splash_view import SplashView
 
@@ -242,6 +242,68 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             "wordle": self.wordle_tab_button,
         }
 
+        self.tab_loaders = {
+            "chat": self._init_chat_view,
+            "msgs": self._init_msgs_view,
+            "tasks": self._init_tasks_view,
+            "keep": self._init_keep_view,
+            "wordle": self._init_wordle_view,
+        }
+
+        self._tab_ui_descriptors = {
+            "chat": {
+                "button": self.chat_tab_button,
+                "icon_img": self.chat_icon_img,
+                "label": self.chat_label,
+                "badge": self.chat_badge,
+                "overlay_badge": self.chat_overlay_badge,
+                "icon_active": ICON_HICOLOR_CHAT,
+                "icon_inactive": ICON_GREYSCALE_CHAT,
+                "unread_count": lambda: self.unread_chat_count,
+            },
+            "msgs": {
+                "button": self.msgs_tab_button,
+                "icon_img": self.msgs_icon_img,
+                "label": self.msgs_label,
+                "badge": self.msgs_badge,
+                "overlay_badge": self.msgs_overlay_badge,
+                "icon_active": ICON_HICOLOR_MSGS,
+                "icon_inactive": ICON_GREYSCALE_MSGS,
+                "unread_count": lambda: self.unread_msgs_count,
+            },
+            "tasks": {
+                "button": self.tasks_tab_button,
+                "icon_img": self.tasks_icon_img,
+                "label": self.tasks_label,
+                "badge": self.tasks_badge,
+                "overlay_badge": self.tasks_overlay_badge,
+                "icon_active": ICON_HICOLOR_TASKS,
+                "icon_inactive": ICON_GREYSCALE_TASKS,
+                "unread_count": lambda: self.unread_tasks_count,
+            },
+            "keep": {
+                "button": self.keep_tab_button,
+                "icon_img": self.keep_icon_img,
+                "label": self.keep_label,
+                "badge": self.keep_badge,
+                "overlay_badge": self.keep_overlay_badge,
+                "icon_active": ICON_HICOLOR_KEEP,
+                "icon_inactive": ICON_GREYSCALE_KEEP,
+                "unread_count": lambda: self.unread_keep_count,
+            },
+            "wordle": {
+                "button": self.wordle_tab_button,
+                "icon_img": self.wordle_icon_img,
+                "label": self.wordle_label,
+                "badge": None,
+                "overlay_badge": self.wordle_overlay_badge,
+                "icon_active": ICON_HICOLOR_WORDLE,
+                "icon_inactive": ICON_GREYSCALE_WORDLE,
+                "fallback_icon": "wayland",
+                "custom_overlay": lambda: not self.wordle_completed,
+            },
+        }
+
         for tab_id in self.tab_order:
             if tab_id in self.tab_buttons:
                 btn = self.tab_buttons[tab_id]
@@ -294,16 +356,9 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         root_vbox.append(self.stack)
         self.set_child(root_vbox)
 
-        if settings_mgr.is_tab_enabled("chat"):
-            self._init_chat_view()
-        if settings_mgr.is_tab_enabled("msgs"):
-            self._init_msgs_view()
-        if settings_mgr.is_tab_enabled("wordle"):
-            self._init_wordle_view()
-        if settings_mgr.is_tab_enabled("keep"):
-            self._init_keep_view()
-        if settings_mgr.is_tab_enabled("tasks"):
-            self._init_tasks_view()
+        for tab_id, loader in self.tab_loaders.items():
+            if settings_mgr.is_tab_enabled(tab_id):
+                loader()
 
         self.settings_view = SettingsView(
             on_accounts_changed_cb=self._on_accounts_changed,
@@ -443,20 +498,18 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
             self.ipc_handles["tasks"] = (read_fd, watch_id)
 
+    def get_tab_app(self, tab_id: str):
+        if tab_id == "settings":
+            return getattr(self, "settings_view", None)
+        return getattr(self, f"{tab_id}_app", None)
+
     def _on_accounts_changed(self):
         settings_mgr = SettingsManager.get_instance()
-        if settings_mgr.is_tab_enabled("chat"):
-            self._init_chat_view()
-        if settings_mgr.is_tab_enabled("msgs"):
-            self._init_msgs_view()
-        if settings_mgr.is_tab_enabled("wordle"):
-            self._init_wordle_view()
-        if settings_mgr.is_tab_enabled("keep"):
-            self._init_keep_view()
-        if settings_mgr.is_tab_enabled("tasks"):
-            self._init_tasks_view()
+        for tab_id, loader in self.tab_loaders.items():
+            if settings_mgr.is_tab_enabled(tab_id):
+                loader()
 
-        if self.current_tab in ("chat", "msgs", "wordle", "keep", "tasks"):
+        if self.current_tab in self.tab_loaders:
             if settings_mgr.is_tab_enabled(self.current_tab):
                 self.stack.set_visible_child_name(self.current_tab)
             else:
@@ -466,20 +519,12 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_tab_ui()
 
     def _load_tab(self, tab_id: str):
-        if tab_id == "chat":
-            self._init_chat_view()
-        elif tab_id == "msgs":
-            self._init_msgs_view()
-        elif tab_id == "wordle":
-            self._init_wordle_view()
-        elif tab_id == "keep":
-            self._init_keep_view()
-        elif tab_id == "tasks":
-            self._init_tasks_view()
+        if loader := self.tab_loaders.get(tab_id):
+            loader()
 
     def _unload_tab(self, tab_id: str):
         self._cleanup_ipc_handle(tab_id)
-        app = getattr(self, f"{tab_id}_app", None)
+        app = self.get_tab_app(tab_id)
         if app:
             try:
                 app.cleanup()
@@ -490,15 +535,9 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         if existing := self.stack.get_child_by_name(tab_id):
             self.stack.remove(existing)
 
-        if tab_id == "chat":
-            self.unread_chat_count = 0
-        elif tab_id == "msgs":
-            self.unread_msgs_count = 0
-        elif tab_id == "tasks":
-            self.unread_tasks_count = 0
-        elif tab_id == "keep":
-            self.unread_keep_count = 0
-        elif tab_id == "wordle":
+        if hasattr(self, f"unread_{tab_id}_count"):
+            setattr(self, f"unread_{tab_id}_count", 0)
+        if tab_id == "wordle":
             self.wordle_completed = None
 
         import gc
@@ -565,27 +604,13 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
                     if msg_type in ("unread_count", "status_update", "title_update"):
                         if "count" in msg:
-                            count = msg.get("count", 0)
-                            if app_name == "msgs":
-                                self.unread_msgs_count = count
-                            elif app_name == "chat":
-                                self.unread_chat_count = count
-                            elif app_name == "keep":
-                                self.unread_keep_count = count
-                            elif app_name == "tasks":
-                                self.unread_tasks_count = count
+                            setattr(self, f"unread_{app_name}_count", msg.get("count", 0))
 
                         if "completed" in msg and app_name == "wordle":
                             self.wordle_completed = msg.get("completed", False)
 
                         if "title" in msg:
-                            title = msg.get("title")
-                            if app_name == "msgs":
-                                self.msgs_selected_title = title
-                            elif app_name == "chat":
-                                self.chat_selected_title = title
-                            elif app_name == "wordle":
-                                self.wordle_selected_title = title
+                            setattr(self, f"{app_name}_selected_title", msg.get("title"))
 
                         GLib.idle_add(self._update_tab_ui)
                         GLib.idle_add(self._update_header_title)
@@ -605,29 +630,23 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._on_settings_tab_clicked()
         self.settings_view.show_alert_message(err_msg)
 
-    def _on_chat_tab_clicked(self, widget):
-        self.current_tab = "chat"
-        self.stack.set_visible_child_name("chat")
+    def _switch_to_tab(self, tab_id: str):
+        self.current_tab = tab_id
+        self.stack.set_visible_child_name(tab_id)
         self._update_tab_ui()
         self._update_header_title()
 
-    def _on_msgs_tab_clicked(self, widget):
-        self.current_tab = "msgs"
-        self.stack.set_visible_child_name("msgs")
-        self._update_tab_ui()
-        self._update_header_title()
+    def _on_chat_tab_clicked(self, widget=None):
+        self._switch_to_tab("chat")
+
+    def _on_msgs_tab_clicked(self, widget=None):
+        self._switch_to_tab("msgs")
 
     def _on_keep_tab_clicked(self, widget=None):
-        self.current_tab = "keep"
-        self.stack.set_visible_child_name("keep")
-        self._update_tab_ui()
-        self._update_header_title()
+        self._switch_to_tab("keep")
 
     def _on_tasks_tab_clicked(self, widget=None):
-        self.current_tab = "tasks"
-        self.stack.set_visible_child_name("tasks")
-        self._update_tab_ui()
-        self._update_header_title()
+        self._switch_to_tab("tasks")
 
     def _on_wordle_tab_clicked(self, widget=None):
         active_card = AccountManager.get_instance().get_active_card("nytimes")
@@ -644,39 +663,15 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.settings_view.show_alert_message(None)
         if self.wordle_app is None:
             self._init_wordle_view()
-        self.current_tab = "wordle"
-        self.stack.set_visible_child_name("wordle")
-        self._update_tab_ui()
-        self._update_header_title()
+        self._switch_to_tab("wordle")
 
     def _on_settings_tab_clicked(self, widget=None):
-        self.current_tab = "settings"
-        self.stack.set_visible_child_name("settings")
-        self._update_tab_ui()
-        self._update_header_title()
+        self._switch_to_tab("settings")
 
     def _update_header_title(self):
-        if self.current_tab == "chat":
-            tab_name = "Chat"
-            selected_title = self.chat_selected_title
-        elif self.current_tab == "msgs":
-            tab_name = "Messages"
-            selected_title = self.msgs_selected_title
-        elif self.current_tab == "wordle":
-            tab_name = "Wordle"
-            selected_title = self.wordle_selected_title
-        elif self.current_tab == "keep":
-            tab_name = "Keep"
-            selected_title = None
-        elif self.current_tab == "tasks":
-            tab_name = "Tasks"
-            selected_title = None
-        elif self.current_tab == "settings":
-            tab_name = "Settings"
-            selected_title = None
-        else:
-            tab_name = self.current_tab.capitalize()
-            selected_title = None
+        meta = TAB_METADATA.get(self.current_tab, {})
+        tab_name = meta.get("short_name", self.current_tab.capitalize())
+        selected_title = getattr(self, f"{self.current_tab}_selected_title", None)
 
         if selected_title:
             full_title = f"Philotes | {tab_name} | {selected_title}"
@@ -686,153 +681,53 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.set_title(full_title)
 
     def _update_tab_ui(self):
-        # Chat tab styling
-        if self.current_tab == "chat":
-            self.chat_tab_button.remove_css_class("tab-button-inactive")
-            self.chat_tab_button.add_css_class("tab-button")
-            self.chat_tab_button.add_css_class("tab-button-active")
-            self._set_image_from_svg(self.chat_icon_img, ICON_HICOLOR_CHAT)
-            self.chat_label.set_visible(True)
-            self.chat_overlay_badge.set_visible(False)
-            if self.unread_chat_count > 0:
-                self.chat_badge.set_text(str(self.unread_chat_count))
-                self.chat_badge.remove_css_class("badge-hidden")
-                self.chat_badge.set_visible(True)
-            else:
-                self.chat_badge.set_text("")
-                self.chat_badge.add_css_class("badge-hidden")
-                self.chat_badge.set_visible(False)
-        else:
-            self.chat_tab_button.remove_css_class("tab-button-active")
-            self.chat_tab_button.add_css_class("tab-button")
-            self.chat_tab_button.add_css_class("tab-button-inactive")
-            self._set_image_from_svg(self.chat_icon_img, ICON_GREYSCALE_CHAT)
-            self.chat_label.set_visible(False)
-            self.chat_badge.set_visible(False)
-            if self.unread_chat_count > 0:
-                self.chat_overlay_badge.set_text(str(self.unread_chat_count))
-                self.chat_overlay_badge.remove_css_class("badge-hidden")
-                self.chat_overlay_badge.set_visible(True)
-            else:
-                self.chat_overlay_badge.set_text("")
-                self.chat_overlay_badge.add_css_class("badge-hidden")
-                self.chat_overlay_badge.set_visible(False)
+        for tab_id, ui in self._tab_ui_descriptors.items():
+            is_active = (self.current_tab == tab_id)
+            btn = ui["button"]
+            icon_img = ui["icon_img"]
+            label = ui["label"]
+            badge = ui.get("badge")
+            overlay_badge = ui.get("overlay_badge")
 
-        # Messages tab styling
-        if self.current_tab == "msgs":
-            self.msgs_tab_button.remove_css_class("tab-button-inactive")
-            self.msgs_tab_button.add_css_class("tab-button")
-            self.msgs_tab_button.add_css_class("tab-button-active")
-            self._set_image_from_svg(self.msgs_icon_img, ICON_HICOLOR_MSGS)
-            self.msgs_label.set_visible(True)
-            self.msgs_overlay_badge.set_visible(False)
-            if self.unread_msgs_count > 0:
-                self.msgs_badge.set_text(str(self.unread_msgs_count))
-                self.msgs_badge.remove_css_class("badge-hidden")
-                self.msgs_badge.set_visible(True)
+            if is_active:
+                btn.remove_css_class("tab-button-inactive")
+                btn.add_css_class("tab-button")
+                btn.add_css_class("tab-button-active")
+                self._set_image_from_svg(icon_img, ui["icon_active"], fallback_icon_name=ui.get("fallback_icon"))
+                label.set_visible(True)
+                if overlay_badge and not ui.get("custom_overlay"):
+                    overlay_badge.set_visible(False)
+                if badge:
+                    count = ui["unread_count"]() if "unread_count" in ui else 0
+                    if count > 0:
+                        badge.set_text(str(count))
+                        badge.remove_css_class("badge-hidden")
+                        badge.set_visible(True)
+                    else:
+                        badge.set_text("")
+                        badge.add_css_class("badge-hidden")
+                        badge.set_visible(False)
             else:
-                self.msgs_badge.set_text("")
-                self.msgs_badge.add_css_class("badge-hidden")
-                self.msgs_badge.set_visible(False)
-        else:
-            self.msgs_tab_button.remove_css_class("tab-button-active")
-            self.msgs_tab_button.add_css_class("tab-button")
-            self.msgs_tab_button.add_css_class("tab-button-inactive")
-            self._set_image_from_svg(self.msgs_icon_img, ICON_GREYSCALE_MSGS)
-            self.msgs_label.set_visible(False)
-            self.msgs_badge.set_visible(False)
-            if self.unread_msgs_count > 0:
-                self.msgs_overlay_badge.set_text(str(self.unread_msgs_count))
-                self.msgs_overlay_badge.remove_css_class("badge-hidden")
-                self.msgs_overlay_badge.set_visible(True)
-            else:
-                self.msgs_overlay_badge.set_text("")
-                self.msgs_overlay_badge.add_css_class("badge-hidden")
-                self.msgs_overlay_badge.set_visible(False)
+                btn.remove_css_class("tab-button-active")
+                btn.add_css_class("tab-button")
+                btn.add_css_class("tab-button-inactive")
+                self._set_image_from_svg(icon_img, ui["icon_inactive"], fallback_icon_name=ui.get("fallback_icon"))
+                label.set_visible(False)
+                if badge:
+                    badge.set_visible(False)
+                if overlay_badge and not ui.get("custom_overlay"):
+                    count = ui["unread_count"]() if "unread_count" in ui else 0
+                    if count > 0:
+                        overlay_badge.set_text(str(count))
+                        overlay_badge.remove_css_class("badge-hidden")
+                        overlay_badge.set_visible(True)
+                    else:
+                        overlay_badge.set_text("")
+                        overlay_badge.add_css_class("badge-hidden")
+                        overlay_badge.set_visible(False)
 
-        # Wordle tab styling
-        if self.current_tab == "wordle":
-            self.wordle_tab_button.remove_css_class("tab-button-inactive")
-            self.wordle_tab_button.add_css_class("tab-button")
-            self.wordle_tab_button.add_css_class("tab-button-active")
-            self._set_image_from_svg(self.wordle_icon_img, ICON_HICOLOR_WORDLE, fallback_icon_name="wayland")
-            self.wordle_label.set_visible(True)
-        else:
-            self.wordle_tab_button.remove_css_class("tab-button-active")
-            self.wordle_tab_button.add_css_class("tab-button")
-            self.wordle_tab_button.add_css_class("tab-button-inactive")
-            self._set_image_from_svg(self.wordle_icon_img, ICON_GREYSCALE_WORDLE, fallback_icon_name="wayland")
-            self.wordle_label.set_visible(False)
-
-        # Show small blue dot overlayed on icon top right corner if Wordle is incomplete
-        if not self.wordle_completed:
-            self.wordle_overlay_badge.set_visible(True)
-        else:
-            self.wordle_overlay_badge.set_visible(False)
-
-        # Keep tab styling
-        if self.current_tab == "keep":
-            self.keep_tab_button.remove_css_class("tab-button-inactive")
-            self.keep_tab_button.add_css_class("tab-button")
-            self.keep_tab_button.add_css_class("tab-button-active")
-            self._set_image_from_svg(self.keep_icon_img, ICON_HICOLOR_KEEP)
-            self.keep_label.set_visible(True)
-            self.keep_overlay_badge.set_visible(False)
-            if self.unread_keep_count > 0:
-                self.keep_badge.set_text(str(self.unread_keep_count))
-                self.keep_badge.remove_css_class("badge-hidden")
-                self.keep_badge.set_visible(True)
-            else:
-                self.keep_badge.set_text("")
-                self.keep_badge.add_css_class("badge-hidden")
-                self.keep_badge.set_visible(False)
-        else:
-            self.keep_tab_button.remove_css_class("tab-button-active")
-            self.keep_tab_button.add_css_class("tab-button")
-            self.keep_tab_button.add_css_class("tab-button-inactive")
-            self._set_image_from_svg(self.keep_icon_img, ICON_GREYSCALE_KEEP)
-            self.keep_label.set_visible(False)
-            self.keep_badge.set_visible(False)
-            if self.unread_keep_count > 0:
-                self.keep_overlay_badge.set_text(str(self.unread_keep_count))
-                self.keep_overlay_badge.remove_css_class("badge-hidden")
-                self.keep_overlay_badge.set_visible(True)
-            else:
-                self.keep_overlay_badge.set_text("")
-                self.keep_overlay_badge.add_css_class("badge-hidden")
-                self.keep_overlay_badge.set_visible(False)
-
-        # Tasks tab styling
-        if self.current_tab == "tasks":
-            self.tasks_tab_button.remove_css_class("tab-button-inactive")
-            self.tasks_tab_button.add_css_class("tab-button")
-            self.tasks_tab_button.add_css_class("tab-button-active")
-            self._set_image_from_svg(self.tasks_icon_img, ICON_HICOLOR_TASKS)
-            self.tasks_label.set_visible(True)
-            self.tasks_overlay_badge.set_visible(False)
-            if self.unread_tasks_count > 0:
-                self.tasks_badge.set_text(str(self.unread_tasks_count))
-                self.tasks_badge.remove_css_class("badge-hidden")
-                self.tasks_badge.set_visible(True)
-            else:
-                self.tasks_badge.set_text("")
-                self.tasks_badge.add_css_class("badge-hidden")
-                self.tasks_badge.set_visible(False)
-        else:
-            self.tasks_tab_button.remove_css_class("tab-button-active")
-            self.tasks_tab_button.add_css_class("tab-button")
-            self.tasks_tab_button.add_css_class("tab-button-inactive")
-            self._set_image_from_svg(self.tasks_icon_img, ICON_GREYSCALE_TASKS)
-            self.tasks_label.set_visible(False)
-            self.tasks_badge.set_visible(False)
-            if self.unread_tasks_count > 0:
-                self.tasks_overlay_badge.set_text(str(self.unread_tasks_count))
-                self.tasks_overlay_badge.remove_css_class("badge-hidden")
-                self.tasks_overlay_badge.set_visible(True)
-            else:
-                self.tasks_overlay_badge.set_text("")
-                self.tasks_overlay_badge.add_css_class("badge-hidden")
-                self.tasks_overlay_badge.set_visible(False)
+            if "custom_overlay" in ui and overlay_badge:
+                overlay_badge.set_visible(ui["custom_overlay"]())
 
         # Settings button styling
         if self.current_tab == "settings":
@@ -871,33 +766,11 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         print(f"[Philotes] Refreshing tab: {tab_id}", flush=True)
         if tab_id != "settings" and not SettingsManager.get_instance().is_tab_enabled(tab_id):
             return
-        if tab_id == "chat":
-            if self.chat_app:
-                self.chat_app.reload()
-            else:
-                self._init_chat_view()
-        elif tab_id == "msgs":
-            if self.msgs_app:
-                self.msgs_app.reload()
-            else:
-                self._init_msgs_view()
-        elif tab_id == "tasks":
-            if self.tasks_app:
-                self.tasks_app.reload()
-            else:
-                self._init_tasks_view()
-        elif tab_id == "keep":
-            if self.keep_app:
-                self.keep_app.reload()
-            else:
-                self._init_keep_view()
-        elif tab_id == "wordle":
-            if self.wordle_app:
-                self.wordle_app.reload()
-            else:
-                self._init_wordle_view()
-        elif tab_id == "settings":
-            self.settings_view.refresh_cards()
+        app = self.get_tab_app(tab_id)
+        if app and hasattr(app, "reload"):
+            app.reload()
+        else:
+            self._load_tab(tab_id)
 
     def _on_tab_drag_prepare(self, source, x, y, tab_id):
         # Only allow dragging when the tab is currently selected/active
