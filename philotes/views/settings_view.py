@@ -422,6 +422,18 @@ class SettingsView(Gtk.Box):
         dc_row.append(dc_val)
         desktop_card.append(dc_row)
 
+        color_scheme = SettingsManager.get_instance().get_system_color_scheme()
+        scheme_label_text = "Dark (High Contrast / Dark Mode)" if color_scheme == "dark" else ("Light" if color_scheme == "light" else "Default (Dark Slate)")
+        cs_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        cs_lbl = Gtk.Label(label="System Color Scheme:")
+        cs_lbl.add_css_class("settings-meta-item")
+        cs_lbl.set_halign(Gtk.Align.START)
+        cs_val = Gtk.Label(label=scheme_label_text)
+        cs_val.add_css_class("settings-meta-value")
+        cs_row.append(cs_lbl)
+        cs_row.append(cs_val)
+        desktop_card.append(cs_row)
+
         dc_desc = Gtk.Label(label="Double-click any active tab header to reload its web contents.")
         dc_desc.add_css_class("section-desc")
         dc_desc.set_halign(Gtk.Align.START)

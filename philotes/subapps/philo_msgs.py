@@ -12,6 +12,7 @@ from gi.repository import Gtk, WebKit, GLib
 from philotes.process_utils import set_process_name
 from philotes.config import SUBAPP_MSGS_NAME
 from philotes.session_manager import SessionManager
+from philotes.settings_manager import init_system_theme_sync
 from philotes.clipboard_bridge import enable_image_paste
 
 USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
@@ -58,6 +59,7 @@ class PhiloMsgsApp:
         )
 
     def _init_webkit_settings(self):
+        init_system_theme_sync()
         self.settings = WebKit.Settings()
         self.settings.set_user_agent(USER_AGENT)
         self.settings.set_enable_javascript(True)
@@ -333,6 +335,7 @@ class PhiloMsgsApp:
 # -----------------------------------------------------------------------------
 def run_philo_msgs_subprocess(ipc_write_fd):
     set_process_name(SUBAPP_MSGS_NAME)
+    init_system_theme_sync()
     app = Gtk.Application(application_id="com.philotes.philo_msgs")
 
     def on_activate(gtk_app):

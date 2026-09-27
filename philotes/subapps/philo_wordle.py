@@ -11,6 +11,7 @@ from gi.repository import Gtk, WebKit, GLib
 from philotes.process_utils import set_process_name
 from philotes.config import SUBAPP_WORDLE_NAME
 from philotes.session_manager import SessionManager
+from philotes.settings_manager import init_system_theme_sync
 from philotes.clipboard_bridge import enable_image_paste
 
 WORDLE_URL = "https://www.nytimes.com/games/wordle/index.html"
@@ -143,6 +144,7 @@ class PhiloWordleApp:
             profile_id=profile_id,
         )
 
+        init_system_theme_sync()
         self.settings = WebKit.Settings()
         self.settings.set_user_agent(USER_AGENT)
         self.settings.set_enable_javascript(True)
@@ -308,6 +310,7 @@ class PhiloWordleApp:
 
 def run_philo_wordle_subprocess(ipc_write_fd):
     set_process_name(SUBAPP_WORDLE_NAME)
+    init_system_theme_sync()
     app = Gtk.Application(application_id="com.philotes.philo_wordle")
     
     def on_activate(gtk_app):

@@ -1,4 +1,4 @@
-# Philotes (v5.2.1)
+# Philotes (v5.3.0)
 
 **Philotes** is a lightweight, Linux-first (Arch Linux optimized) communication application container designed to run continuously with minimal system resource footprint. Built on **GTK 4** and **WebKitGTK 6.0**, it hosts modular sub-applications: **Google Chat** (`philo-chat`), **Google Messages** (`philo-msgs`), **Google Tasks** (`philo-tasks`), **Google Keep** (`philo-keep`), and **NYT Wordle** (`philo-wordle`).
 
@@ -8,6 +8,10 @@
 
 - **Process Isolation & OS Identification (`btop`/`htop`)**:
   - Main process (`philotes`) and child sub-application tasks registered via native Linux `prctl(PR_SET_NAME)` to `philotes`, `philo-chat`, `philo-msgs`, `philo-keep`, `philo-tasks`, and `philo-wordle`.
+- **Native XDG Portal Color Scheme Synchronization**:
+  - Automatically queries the Linux desktop environment's preferred color scheme via D-Bus XDG Desktop Portal (`org.freedesktop.appearance:color-scheme`) and GSettings (`org.gnome.desktop.interface:color-scheme`).
+  - Synchronizes to GTK's `gtk-application-prefer-dark-theme` so WebKitGTK evaluates `@media (prefers-color-scheme: dark)` accurately across all web applications (ensuring dark mode in Google Tasks and all sub-applications).
+  - Dynamically monitors portal `SettingChanged` signals to transition running WebViews between light and dark themes in real time without restart.
 - **Top Bar & Dynamic Reorderable Tabs**:
   - Double-click tab header to refresh: double-clicking any tab header triggers an instant page refresh/reload using native Linux `Gtk.GestureClick` and system double-click threshold.
   - Drag-and-drop tab reordering when tabs are active, allowing customized arrangements.

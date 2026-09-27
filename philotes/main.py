@@ -571,6 +571,8 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_header_title()
 
     def _load_theme(self):
+        SettingsManager.get_instance().sync_system_theme_to_gtk()
+
         display = Gdk.Display.get_default()
         if display:
             icon_theme = Gtk.IconTheme.get_for_display(display)

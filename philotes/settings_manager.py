@@ -72,6 +72,9 @@ class SettingsManager:
 
     def __init__(self):
         self._settings = self._load_settings()
+        self._portal_sub_id = None
+        self._gsettings_interface = None
+        self._init_theme_monitoring()
 
     @property
     def accounts(self) -> AccountManager:
@@ -243,3 +246,128 @@ class SettingsManager:
             pass
 
         return double_click_time
+
+    def get_system_color_scheme(self) -> str:
+        """
+        Reads the system color scheme preference.
+        Resolves via:
+          1. D-Bus XDG Desktop Portal (org.freedesktop.portal.Settings, org.freedesktop.appearance:color-scheme)
+             0 = No preference / default
+             1 = Prefer dark
+             2 = Prefer light
+          2. GSettings (org.gnome.desktop.interface:color-scheme)
+             'prefer-dark', 'prefer-light', 'default'
+        Returns:
+          'dark', 'light', or 'default'
+        """
+        import gi
+        gi.require_version("Gio", "2.0")
+        from gi.repository import Gio, GLib
+
+        # 1. Query D-Bus XDG Desktop Portal Settings
+        try:
+            bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+            reply = bus.call_sync(
+                "org.freedesktop.portal.Desktop",
+                "/org/freedesktop/portal/desktop",
+                "org.freedesktop.portal.Settings",
+                "Read",
+                GLib.Variant("(ss)", ("org.freedesktop.appearance", "color-scheme")),
+                None,
+                Gio.DBusCallFlags.NONE,
+                500,
+                None,
+            )
+            if reply:
+                val = reply.unpack()[0]
+                if val == 1:
+                    return "dark"
+                elif val == 2:
+                    return "light"
+        except Exception:
+            pass
+
+        # 2. Query GSettings
+        try:
+            source = Gio.SettingsSchemaSource.get_default()
+            if source and source.lookup("org.gnome.desktop.interface", False):
+                gsettings = Gio.Settings(schema="org.gnome.desktop.interface")
+                val = gsettings.get_string("color-scheme")
+                if val == "prefer-dark":
+                    return "dark"
+                elif val == "prefer-light":
+                    return "light"
+        except Exception:
+            pass
+
+        return "default"
+
+    def is_system_dark_theme(self) -> bool:
+        """
+        Determines whether dark theme should be enforced.
+        Returns False only if the user explicitly prefers light mode.
+        Defaults to True (matching Philotes dark slate design).
+        """
+        return self.get_system_color_scheme() != "light"
+
+    def sync_system_theme_to_gtk(self) -> bool:
+        """
+        Resolves the system color scheme and synchronizes it to
+        Gtk.Settings:gtk-application-prefer-dark-theme.
+        WebKitGTK automatically picks this up for @media (prefers-color-scheme: dark).
+        """
+        import gi
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk
+
+        is_dark = self.is_system_dark_theme()
+        try:
+            gtk_settings = Gtk.Settings.get_default()
+            if gtk_settings:
+                gtk_settings.set_property("gtk-application-prefer-dark-theme", is_dark)
+        except Exception as e:
+            sys.stderr.write(f"[Philotes SettingsManager] Warning syncing theme: {e}\n")
+        return is_dark
+
+    def _init_theme_monitoring(self):
+        """Sets up D-Bus portal and GSettings dynamic signal monitoring for color scheme changes."""
+        import gi
+        gi.require_version("Gio", "2.0")
+        from gi.repository import Gio
+        try:
+            bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+            self._portal_sub_id = bus.signal_subscribe(
+                "org.freedesktop.portal.Desktop",
+                "org.freedesktop.portal.Settings",
+                "SettingChanged",
+                "/org/freedesktop/portal/desktop",
+                None,
+                Gio.DBusSignalFlags.NONE,
+                self._on_portal_setting_changed,
+                None,
+            )
+        except Exception as e:
+            sys.stderr.write(f"[Philotes SettingsManager] Portal signal subscription failed: {e}\n")
+
+        try:
+            source = Gio.SettingsSchemaSource.get_default()
+            if source and source.lookup("org.gnome.desktop.interface", False):
+                self._gsettings_interface = Gio.Settings(schema="org.gnome.desktop.interface")
+                self._gsettings_interface.connect("changed::color-scheme", lambda s, k: self.sync_system_theme_to_gtk())
+        except Exception:
+            pass
+
+    def _on_portal_setting_changed(self, connection, sender_name, object_path, interface_name, signal_name, parameters, user_data=None):
+        try:
+            if parameters:
+                unpacked = parameters.unpack()
+                if len(unpacked) >= 2 and unpacked[0] == "org.freedesktop.appearance" and unpacked[1] == "color-scheme":
+                    self.sync_system_theme_to_gtk()
+        except Exception:
+            pass
+
+
+def init_system_theme_sync() -> bool:
+    """Convenience helper for main app and subprocesses to synchronize GTK with system theme."""
+    return SettingsManager.get_instance().sync_system_theme_to_gtk()
+

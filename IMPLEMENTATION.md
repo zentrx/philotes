@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v5.2.1)
+# Philotes Implementation Document (v5.3.0)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
@@ -76,6 +76,10 @@ Supported sub-applications:
 
 ### 2.5 Dynamic Top Bar Navigation & Draggable Tab Reordering
 - **Theme**: Defined in `styles/dark-sharp.css` with Arch dark slate palette (`#1a1b26`, `#24283b`, `#7aa2f7`), 0–2px sharp borders, and high-contrast styling.
+- **Native XDG Portal Color Scheme Synchronization (`philotes.settings_manager`)**:
+  - Automatically queries the Linux desktop environment's preferred color scheme via D-Bus XDG Desktop Portal (`org.freedesktop.portal.Settings` -> `org.freedesktop.appearance:color-scheme`) and GSettings (`org.gnome.desktop.interface:color-scheme`).
+  - Sets `Gtk.Settings:gtk-application-prefer-dark-theme`, which WebKitGTK uses to evaluate `@media (prefers-color-scheme: dark)`. This ensures standalone web applications like Google Tasks render in dark mode matching the application and OS.
+  - Dynamically listens to the portal's `SettingChanged` signal so changes in desktop appearance propagate to running WebViews in real time.
 - **Draggable Reordering (`Gtk.DragSource` / `Gtk.DropTarget`)**:
   - Dragging is enabled exclusively on the **currently active tab** (`tab_id == self.current_tab`), preventing misclicks when switching tabs.
   - Interactive hover drop indicators highlight the insertion boundary (`.tab-drop-before` / `.tab-drop-after`).
