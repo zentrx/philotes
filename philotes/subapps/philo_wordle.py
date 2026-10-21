@@ -79,11 +79,11 @@ CHECK_WORDLE_STATUS_JS = """
 
 AD_BLOCK_CSS = """
 /* NYTimes Wordle Ad Block & Element Hiding */
-[id*="ad-"], [id*="dfp-ad"], [class*="ad-slot"], [class*="Ad-module"],
+[id^="ad-"], [id*="-ad-"], [id*="dfp-ad"], [class*="ad-slot"], [class*="Ad-module"],
 [class*="ad-container"], [class*="AdContainer"], iframe[src*="doubleclick"],
 iframe[src*="googlesyndication"], div[id^="google_ads"], div[class*="ad-wrapper"],
 #bottom-ad, #top-ad, .place-ad, #dfp-ad-top, #dfp-ad-bottom, #portal-editorial-ad,
-.ad-unit, [data-testid*="ad-"] {
+.ad-unit, [data-testid^="ad-"], [data-testid*="-ad-"] {
     display: none !important;
     visibility: hidden !important;
     height: 0px !important;
@@ -97,41 +97,9 @@ iframe[src*="googlesyndication"], div[id^="google_ads"], div[class*="ad-wrapper"
 }
 """
 
-AD_BLOCK_JS = """
-(function() {
-    function removeAds() {
-        const selectors = [
-            '[id*="ad-"]', '[id*="dfp-ad"]', '[class*="ad-slot"]', '[class*="Ad-module"]',
-            '[class*="ad-container"]', '[class*="AdContainer"]', 'iframe[src*="doubleclick"]',
-            'iframe[src*="googlesyndication"]', 'div[id^="google_ads"]', 'div[class*="ad-wrapper"]',
-            '#bottom-ad', '#top-ad', '.place-ad', '#dfp-ad-top', '#dfp-ad-bottom', '#portal-editorial-ad',
-            '.ad-unit', '[data-testid*="ad-"]'
-        ];
-        selectors.forEach(sel => {
-            document.querySelectorAll(sel).forEach(el => {
-                try {
-                    el.style.setProperty('display', 'none', 'important');
-                    el.remove();
-                } catch(e) {}
-            });
-        });
-    }
-    removeAds();
-    const observer = new MutationObserver(removeAds);
-    if (document.body) {
-        observer.observe(document.body, { childList: true, subtree: true });
-    } else {
-        document.addEventListener('DOMContentLoaded', () => {
-            observer.observe(document.body, { childList: true, subtree: true });
-        });
-    }
-})();
-"""
-
 
 class PhiloWordleApp:
     def __init__(self, ipc_write_fd=None, profile_id="default", username=None):
-        set_process_name(SUBAPP_WORDLE_NAME)
         self.ipc_write_fd = ipc_write_fd
         self.profile_id = profile_id
         self.username = username
@@ -144,7 +112,6 @@ class PhiloWordleApp:
             profile_id=profile_id,
         )
 
-        init_system_theme_sync()
         self.settings = WebKit.Settings()
         self.settings.set_user_agent(USER_AGENT)
         self.settings.set_enable_javascript(True)
@@ -158,7 +125,7 @@ class PhiloWordleApp:
         self.web_view.set_settings(self.settings)
         enable_image_paste(self.web_view)
 
-        # Native WebKitGTK Ad-Blocking (UserStyleSheet + UserScript MutationObserver)
+        # Native WebKitGTK Ad-Blocking via UserStyleSheet (avoids mutating React DOM)
         self.user_content_manager = self.web_view.get_user_content_manager()
         style_sheet = WebKit.UserStyleSheet.new(
             AD_BLOCK_CSS,
@@ -168,15 +135,6 @@ class PhiloWordleApp:
             None
         )
         self.user_content_manager.add_style_sheet(style_sheet)
-
-        script = WebKit.UserScript.new(
-            AD_BLOCK_JS,
-            WebKit.UserContentInjectedFrames.ALL_FRAMES,
-            WebKit.UserScriptInjectionTime.START,
-            None,
-            None
-        )
-        self.user_content_manager.add_script(script)
 
         try:
             gi.require_version("Gdk", "4.0")

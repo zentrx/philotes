@@ -29,7 +29,7 @@ class PhiloChatApp:
     SUBAPP_NAME = SUBAPP_CHAT_NAME
     PROVIDER = "google"
     DEFAULT_URL = "https://chat.google.com/"
-    DOM_POLL_INTERVAL_SEC = 0  # Google Chat uses title notifications (no timer needed)
+    DOM_POLL_INTERVAL_SEC = 2
 
     # -------------------------------------------------------------------------
     # Section 2: Standardized Lifecycle & WebKit Initialization (Boilerplate)
@@ -44,7 +44,6 @@ class PhiloChatApp:
         self.load_initial_url()
 
     def _init_state(self, ipc_write_fd, profile_id, username):
-        set_process_name(self.SUBAPP_NAME)
         self.ipc_write_fd = ipc_write_fd
         self.profile_id = profile_id
         self.username = username
@@ -59,7 +58,6 @@ class PhiloChatApp:
         )
 
     def _init_webkit_settings(self):
-        init_system_theme_sync()
         self.settings = WebKit.Settings()
         self.settings.set_user_agent(USER_AGENT)
         self.settings.set_enable_javascript(True)
@@ -71,6 +69,19 @@ class PhiloChatApp:
         self.settings.set_enable_media_stream(True)
         self.settings.set_enable_encrypted_media(True)
         self.settings.set_hardware_acceleration_policy(WebKit.HardwareAccelerationPolicy.ALWAYS)
+
+        # Disable WebKit CSSScrollAnchoring so CSS.supports("overflow-anchor", "unset")
+        # returns false, activating Google Chat's built-in StreamController scroll-to-bottom
+        # restoration when sending messages.
+        try:
+            feature_list = WebKit.Settings.get_all_features()
+            for i in range(feature_list.get_length()):
+                feature = feature_list.get(i)
+                if feature.get_identifier() == "CSSScrollAnchoring":
+                    self.settings.set_feature_enabled(feature, False)
+                    break
+        except Exception as e:
+            print(f"{self.SUBAPP_NAME}: failed to configure CSSScrollAnchoring feature: {e}", flush=True)
 
     def _init_webview(self):
         self.web_view = WebKit.WebView(network_session=self.network_session)
@@ -89,7 +100,12 @@ class PhiloChatApp:
     def _init_signals(self):
         self.web_view.connect("create", self._on_create_window)
         self.web_view.connect("notify::title", self._on_title_changed)
+        self.web_view.connect("load-changed", self._on_load_changed)
         self.web_view.connect("web-process-terminated", self._on_web_process_terminated)
+
+    def _on_load_changed(self, web_view, load_event):
+        if load_event == WebKit.LoadEvent.FINISHED:
+            self._poll_dom()
 
     def _init_dom_polling(self):
         self.poll_timer_id = None
@@ -110,7 +126,8 @@ class PhiloChatApp:
 
     def reload(self):
         if hasattr(self, "web_view") and self.web_view:
-            self.load_initial_url()
+            print(f"{self.SUBAPP_NAME}: reloading {self.DEFAULT_URL}", flush=True)
+            self.web_view.load_uri(self.DEFAULT_URL)
 
     def cleanup(self):
         if getattr(self, "poll_timer_id", None):
@@ -200,18 +217,93 @@ class PhiloChatApp:
             return
 
         match = re.search(r"^\((\d+)\)", title)
-        new_count = int(match.group(1)) if match else 0
         new_title = self._parse_selected_title(title)
 
-        if new_count != self.unread_count or new_title != self.selected_title:
-            self.unread_count = new_count
+        changed = False
+        if match:
+            new_count = int(match.group(1))
+            if new_count != self.unread_count:
+                self.unread_count = new_count
+                changed = True
+
+        if new_title != self.selected_title:
             self.selected_title = new_title
+            changed = True
+
+        if changed:
             print(f"{self.SUBAPP_NAME}: status updated (unread={self.unread_count}, title='{self.selected_title}')", flush=True)
             self._broadcast_status()
 
     def _poll_dom(self) -> bool:
-        """Hook for timer-based DOM polling. Chat relies purely on title notifications."""
+        """Evaluate unread notification count from Google Chat structural DOM attributes."""
+        js_code = """
+        (function() {
+            let groupCounts = new Map();
+
+            // 1. Check all conversation/space items marked with data-is-unread="true"
+            let unreadEls = document.querySelectorAll('[data-is-unread="true"]');
+            for (let i = 0; i < unreadEls.length; i++) {
+                let el = unreadEls[i];
+                let groupId = el.getAttribute('data-group-id') || el.id || ('idx_' + i);
+                let itemCount = 1;
+                let badgeSpans = el.querySelectorAll('span[aria-hidden="true"]:not([data-absolute-timestamp])');
+                for (let j = 0; j < badgeSpans.length; j++) {
+                    let txt = (badgeSpans[j].textContent || '').trim();
+                    if (/^\\d+\\+?$/.test(txt)) {
+                        let parsed = parseInt(txt, 10);
+                        if (!isNaN(parsed) && parsed > itemCount) {
+                            itemCount = parsed;
+                        }
+                    }
+                }
+                let prev = groupCounts.get(groupId) || 0;
+                if (itemCount > prev) {
+                    groupCounts.set(groupId, itemCount);
+                }
+            }
+
+            // 2. Also check any [data-group-id] container with a numeric .SaMfhe badge
+            let badgeNodes = document.querySelectorAll('[data-group-id] span.SaMfhe[aria-hidden="true"]:not([data-absolute-timestamp])');
+            for (let i = 0; i < badgeNodes.length; i++) {
+                let badgeEl = badgeNodes[i];
+                let txt = (badgeEl.textContent || '').trim();
+                if (/^\\d+\\+?$/.test(txt)) {
+                    let parsed = parseInt(txt, 10);
+                    if (!isNaN(parsed) && parsed > 0) {
+                        let parentGroup = badgeEl.closest('[data-group-id]');
+                        let groupId = parentGroup ? parentGroup.getAttribute('data-group-id') : ('badge_' + i);
+                        let prev = groupCounts.get(groupId) || 0;
+                        if (parsed > prev) {
+                            groupCounts.set(groupId, parsed);
+                        }
+                    }
+                }
+            }
+
+            let total = 0;
+            groupCounts.forEach(function(val) {
+                total += val;
+            });
+            return total;
+        })();
+        """
+        try:
+            self.web_view.evaluate_javascript(js_code, -1, None, None, None, self._on_dom_unread_evaluated, None)
+        except Exception:
+            pass
         return True
+
+    def _on_dom_unread_evaluated(self, web_view, result, user_data=None):
+        try:
+            js_val = web_view.evaluate_javascript_finish(result)
+            if js_val and js_val.is_number():
+                new_count = int(js_val.to_double())
+                if new_count != self.unread_count:
+                    self.unread_count = new_count
+                    print(f"{self.SUBAPP_NAME}: unread count updated -> {self.unread_count}", flush=True)
+                    self._broadcast_status()
+        except Exception as e:
+            print(f"{self.SUBAPP_NAME}: DOM unread evaluation error: {e}", flush=True)
 
 
 # -----------------------------------------------------------------------------

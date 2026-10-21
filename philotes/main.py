@@ -83,163 +83,56 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self.tabs_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.tabs_box.set_hexpand(True)
 
-        # Chat Tab Button
-        self.chat_tab_button = Gtk.Button()
-        self.chat_tab_button.connect("clicked", self._on_chat_tab_clicked)
-        
-        self.chat_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.chat_tab_box.set_halign(Gtk.Align.CENTER)
-        self.chat_tab_box.set_valign(Gtk.Align.CENTER)
-        self.chat_overlay = Gtk.Overlay()
-        self.chat_icon_img = Gtk.Image()
-        self.chat_icon_img.add_css_class("tab-icon-img")
-        self.chat_overlay.set_child(self.chat_icon_img)
+        self.tab_buttons = {}
+        self._tab_ui_descriptors = {}
 
-        self.chat_overlay_badge = Gtk.Label(label="")
-        self.chat_overlay_badge.add_css_class("badge")
-        self.chat_overlay_badge.add_css_class("badge-overlay")
-        self.chat_overlay_badge.set_halign(Gtk.Align.END)
-        self.chat_overlay_badge.set_valign(Gtk.Align.START)
-        self.chat_overlay.add_overlay(self.chat_overlay_badge)
+        self._build_tab_button(
+            tab_id="chat",
+            label_text="Chat",
+            icon_active=ICON_HICOLOR_CHAT,
+            icon_inactive=ICON_GREYSCALE_CHAT,
+            on_clicked_cb=self._on_chat_tab_clicked,
+            unread_count_fn=lambda: self.unread_chat_count,
+        )
+        self._build_tab_button(
+            tab_id="msgs",
+            label_text="Messages",
+            icon_active=ICON_HICOLOR_MSGS,
+            icon_inactive=ICON_GREYSCALE_MSGS,
+            on_clicked_cb=self._on_msgs_tab_clicked,
+            unread_count_fn=lambda: self.unread_msgs_count,
+        )
+        self._build_tab_button(
+            tab_id="tasks",
+            label_text="Tasks",
+            icon_active=ICON_HICOLOR_TASKS,
+            icon_inactive=ICON_GREYSCALE_TASKS,
+            on_clicked_cb=self._on_tasks_tab_clicked,
+        )
+        self._build_tab_button(
+            tab_id="keep",
+            label_text="Keep",
+            icon_active=ICON_HICOLOR_KEEP,
+            icon_inactive=ICON_GREYSCALE_KEEP,
+            on_clicked_cb=self._on_keep_tab_clicked,
+        )
+        self._build_tab_button(
+            tab_id="wordle",
+            label_text="Wordle",
+            icon_active=ICON_HICOLOR_WORDLE,
+            icon_inactive=ICON_GREYSCALE_WORDLE,
+            on_clicked_cb=self._on_wordle_tab_clicked,
+            badge_style="dot",
+            fallback_icon="wayland",
+            custom_overlay_fn=lambda: not self.wordle_completed,
+        )
 
-        self.chat_label = Gtk.Label(label="Chat")
-        self.chat_label.add_css_class("tab-label")
-
-        self.chat_badge = Gtk.Label(label="")
-        self.chat_badge.add_css_class("badge")
-        self.chat_badge.add_css_class("badge-hidden")
-
-        self.chat_tab_box.append(self.chat_overlay)
-        self.chat_tab_box.append(self.chat_label)
-        self.chat_tab_box.append(self.chat_badge)
-        self.chat_tab_button.set_child(self.chat_tab_box)
-
-        # Messages Tab Button
-        self.msgs_tab_button = Gtk.Button()
-        self.msgs_tab_button.connect("clicked", self._on_msgs_tab_clicked)
-
-        self.msgs_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.msgs_tab_box.set_halign(Gtk.Align.CENTER)
-        self.msgs_tab_box.set_valign(Gtk.Align.CENTER)
-        self.msgs_overlay = Gtk.Overlay()
-        self.msgs_icon_img = Gtk.Image()
-        self.msgs_icon_img.add_css_class("tab-icon-img")
-        self.msgs_overlay.set_child(self.msgs_icon_img)
-
-        self.msgs_overlay_badge = Gtk.Label(label="")
-        self.msgs_overlay_badge.add_css_class("badge")
-        self.msgs_overlay_badge.add_css_class("badge-overlay")
-        self.msgs_overlay_badge.set_halign(Gtk.Align.END)
-        self.msgs_overlay_badge.set_valign(Gtk.Align.START)
-        self.msgs_overlay.add_overlay(self.msgs_overlay_badge)
-
-        self.msgs_label = Gtk.Label(label="Messages")
-        self.msgs_label.add_css_class("tab-label")
-
-        self.msgs_badge = Gtk.Label(label="")
-        self.msgs_badge.add_css_class("badge")
-        self.msgs_badge.add_css_class("badge-hidden")
-
-        self.msgs_tab_box.append(self.msgs_overlay)
-        self.msgs_tab_box.append(self.msgs_label)
-        self.msgs_tab_box.append(self.msgs_badge)
-        self.msgs_tab_button.set_child(self.msgs_tab_box)
-
-        # Keep Tab Button
-        self.keep_tab_button = Gtk.Button()
-        self.keep_tab_button.connect("clicked", self._on_keep_tab_clicked)
-
-        self.keep_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.keep_tab_box.set_halign(Gtk.Align.CENTER)
-        self.keep_tab_box.set_valign(Gtk.Align.CENTER)
-        self.keep_overlay = Gtk.Overlay()
-        self.keep_icon_img = Gtk.Image()
-        self.keep_icon_img.add_css_class("tab-icon-img")
-        self.keep_overlay.set_child(self.keep_icon_img)
-
-        self.keep_overlay_badge = Gtk.Label(label="")
-        self.keep_overlay_badge.add_css_class("badge")
-        self.keep_overlay_badge.add_css_class("badge-overlay")
-        self.keep_overlay_badge.set_halign(Gtk.Align.END)
-        self.keep_overlay_badge.set_valign(Gtk.Align.START)
-        self.keep_overlay.add_overlay(self.keep_overlay_badge)
-
-        self.keep_label = Gtk.Label(label="Keep")
-        self.keep_label.add_css_class("tab-label")
-
-        self.keep_badge = Gtk.Label(label="")
-        self.keep_badge.add_css_class("badge")
-        self.keep_badge.add_css_class("badge-hidden")
-
-        self.keep_tab_box.append(self.keep_overlay)
-        self.keep_tab_box.append(self.keep_label)
-        self.keep_tab_box.append(self.keep_badge)
-        self.keep_tab_button.set_child(self.keep_tab_box)
-
-        # Tasks Tab Button
-        self.tasks_tab_button = Gtk.Button()
-        self.tasks_tab_button.connect("clicked", self._on_tasks_tab_clicked)
-
-        self.tasks_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.tasks_tab_box.set_halign(Gtk.Align.CENTER)
-        self.tasks_tab_box.set_valign(Gtk.Align.CENTER)
-        self.tasks_overlay = Gtk.Overlay()
-        self.tasks_icon_img = Gtk.Image()
-        self.tasks_icon_img.add_css_class("tab-icon-img")
-        self.tasks_overlay.set_child(self.tasks_icon_img)
-
-        self.tasks_overlay_badge = Gtk.Label(label="")
-        self.tasks_overlay_badge.add_css_class("badge")
-        self.tasks_overlay_badge.add_css_class("badge-overlay")
-        self.tasks_overlay_badge.set_halign(Gtk.Align.END)
-        self.tasks_overlay_badge.set_valign(Gtk.Align.START)
-        self.tasks_overlay.add_overlay(self.tasks_overlay_badge)
-
-        self.tasks_label = Gtk.Label(label="Tasks")
-        self.tasks_label.add_css_class("tab-label")
-
-        self.tasks_badge = Gtk.Label(label="")
-        self.tasks_badge.add_css_class("badge")
-        self.tasks_badge.add_css_class("badge-hidden")
-
-        self.tasks_tab_box.append(self.tasks_overlay)
-        self.tasks_tab_box.append(self.tasks_label)
-        self.tasks_tab_box.append(self.tasks_badge)
-        self.tasks_tab_button.set_child(self.tasks_tab_box)
-
-        # Wordle Tab Button
-        self.wordle_tab_button = Gtk.Button()
-        self.wordle_tab_button.connect("clicked", self._on_wordle_tab_clicked)
-
-        self.wordle_tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self.wordle_tab_box.set_halign(Gtk.Align.CENTER)
-        self.wordle_tab_box.set_valign(Gtk.Align.CENTER)
-        self.wordle_overlay = Gtk.Overlay()
-        self.wordle_icon_img = Gtk.Image()
-        self.wordle_icon_img.add_css_class("tab-icon-img")
-        self.wordle_overlay.set_child(self.wordle_icon_img)
-
-        self.wordle_overlay_badge = Gtk.Box()
-        self.wordle_overlay_badge.add_css_class("badge-blue-dot")
-        self.wordle_overlay_badge.set_halign(Gtk.Align.END)
-        self.wordle_overlay_badge.set_valign(Gtk.Align.START)
-        self.wordle_overlay_badge.set_visible(False)
-        self.wordle_overlay.add_overlay(self.wordle_overlay_badge)
-
-        self.wordle_label = Gtk.Label(label="Wordle")
-        self.wordle_label.add_css_class("tab-label")
-
-        self.wordle_tab_box.append(self.wordle_overlay)
-        self.wordle_tab_box.append(self.wordle_label)
-        self.wordle_tab_button.set_child(self.wordle_tab_box)
-
-        # Tab Mapping & Dynamic Ordering
-        self.tab_buttons = {
-            "chat": self.chat_tab_button,
-            "msgs": self.msgs_tab_button,
-            "tasks": self.tasks_tab_button,
-            "keep": self.keep_tab_button,
-            "wordle": self.wordle_tab_button,
+        self._subapp_classes = {
+            "chat": PhiloChatApp,
+            "msgs": PhiloMsgsApp,
+            "tasks": PhiloTasksApp,
+            "keep": PhiloKeepApp,
+            "wordle": PhiloWordleApp,
         }
 
         self.tab_loaders = {
@@ -248,60 +141,6 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             "tasks": self._init_tasks_view,
             "keep": self._init_keep_view,
             "wordle": self._init_wordle_view,
-        }
-
-        self._tab_ui_descriptors = {
-            "chat": {
-                "button": self.chat_tab_button,
-                "icon_img": self.chat_icon_img,
-                "label": self.chat_label,
-                "badge": self.chat_badge,
-                "overlay_badge": self.chat_overlay_badge,
-                "icon_active": ICON_HICOLOR_CHAT,
-                "icon_inactive": ICON_GREYSCALE_CHAT,
-                "unread_count": lambda: self.unread_chat_count,
-            },
-            "msgs": {
-                "button": self.msgs_tab_button,
-                "icon_img": self.msgs_icon_img,
-                "label": self.msgs_label,
-                "badge": self.msgs_badge,
-                "overlay_badge": self.msgs_overlay_badge,
-                "icon_active": ICON_HICOLOR_MSGS,
-                "icon_inactive": ICON_GREYSCALE_MSGS,
-                "unread_count": lambda: self.unread_msgs_count,
-            },
-            "tasks": {
-                "button": self.tasks_tab_button,
-                "icon_img": self.tasks_icon_img,
-                "label": self.tasks_label,
-                "badge": self.tasks_badge,
-                "overlay_badge": self.tasks_overlay_badge,
-                "icon_active": ICON_HICOLOR_TASKS,
-                "icon_inactive": ICON_GREYSCALE_TASKS,
-                "unread_count": lambda: self.unread_tasks_count,
-            },
-            "keep": {
-                "button": self.keep_tab_button,
-                "icon_img": self.keep_icon_img,
-                "label": self.keep_label,
-                "badge": self.keep_badge,
-                "overlay_badge": self.keep_overlay_badge,
-                "icon_active": ICON_HICOLOR_KEEP,
-                "icon_inactive": ICON_GREYSCALE_KEEP,
-                "unread_count": lambda: self.unread_keep_count,
-            },
-            "wordle": {
-                "button": self.wordle_tab_button,
-                "icon_img": self.wordle_icon_img,
-                "label": self.wordle_label,
-                "badge": None,
-                "overlay_badge": self.wordle_overlay_badge,
-                "icon_active": ICON_HICOLOR_WORDLE,
-                "icon_inactive": ICON_GREYSCALE_WORDLE,
-                "fallback_icon": "wayland",
-                "custom_overlay": lambda: not self.wordle_completed,
-            },
         }
 
         for tab_id in self.tab_order:
@@ -371,6 +210,89 @@ class PhilotesWindow(Gtk.ApplicationWindow):
         self._update_tab_ui()
         self._update_header_title()
 
+    def _build_tab_button(
+        self,
+        tab_id: str,
+        label_text: str,
+        icon_active,
+        icon_inactive,
+        on_clicked_cb,
+        unread_count_fn=None,
+        badge_style: str = "count",
+        fallback_icon: str = None,
+        custom_overlay_fn=None,
+    ) -> Gtk.Button:
+        tab_button = Gtk.Button()
+        tab_button.connect("clicked", on_clicked_cb)
+
+        tab_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        tab_box.set_halign(Gtk.Align.CENTER)
+        tab_box.set_valign(Gtk.Align.CENTER)
+
+        overlay = Gtk.Overlay()
+        icon_img = Gtk.Image()
+        icon_img.add_css_class("tab-icon-img")
+        overlay.set_child(icon_img)
+
+        if badge_style == "dot":
+            overlay_badge = Gtk.Box()
+            overlay_badge.add_css_class("badge-blue-dot")
+            overlay_badge.set_visible(False)
+            badge = None
+        else:
+            overlay_badge = Gtk.Label(label="")
+            overlay_badge.add_css_class("badge")
+            overlay_badge.add_css_class("badge-overlay")
+            badge = Gtk.Label(label="")
+            badge.add_css_class("badge")
+            badge.add_css_class("badge-hidden")
+            badge.set_halign(Gtk.Align.CENTER)
+            badge.set_valign(Gtk.Align.CENTER)
+
+        overlay_badge.set_halign(Gtk.Align.END)
+        overlay_badge.set_valign(Gtk.Align.START)
+        overlay.add_overlay(overlay_badge)
+
+        label = Gtk.Label(label=label_text)
+        label.add_css_class("tab-label")
+
+        tab_box.append(overlay)
+        tab_box.append(label)
+        if badge is not None:
+            tab_box.append(badge)
+        tab_button.set_child(tab_box)
+
+        # Preserve instance attributes for backward compatibility
+        setattr(self, f"{tab_id}_tab_button", tab_button)
+        setattr(self, f"{tab_id}_tab_box", tab_box)
+        setattr(self, f"{tab_id}_overlay", overlay)
+        setattr(self, f"{tab_id}_icon_img", icon_img)
+        setattr(self, f"{tab_id}_overlay_badge", overlay_badge)
+        setattr(self, f"{tab_id}_label", label)
+        if badge is not None:
+            setattr(self, f"{tab_id}_badge", badge)
+
+        self.tab_buttons[tab_id] = tab_button
+
+        descriptor = {
+            "button": tab_button,
+            "icon_img": icon_img,
+            "label": label,
+            "badge": badge,
+            "overlay_badge": overlay_badge,
+            "icon_active": icon_active,
+            "icon_inactive": icon_inactive,
+        }
+        if unread_count_fn is not None:
+            descriptor["unread_count"] = unread_count_fn
+        if fallback_icon is not None:
+            descriptor["fallback_icon"] = fallback_icon
+        if custom_overlay_fn is not None:
+            descriptor["custom_overlay"] = custom_overlay_fn
+
+        self._tab_ui_descriptors[tab_id] = descriptor
+        return tab_button
+
     def _cleanup_ipc_handle(self, tab_id: str):
         if tab_id in self.ipc_handles:
             read_fd, watch_id = self.ipc_handles.pop(tab_id)
@@ -383,120 +305,58 @@ class PhilotesWindow(Gtk.ApplicationWindow):
             except Exception:
                 pass
 
-    def _init_chat_view(self):
-        self._cleanup_ipc_handle("chat")
-        active_card = AccountManager.get_instance().get_active_card("google")
-        
-        if existing := self.stack.get_child_by_name("chat"):
-            self.stack.remove(existing)
+    def _init_tab_view(self, tab_id: str) -> bool:
+        """
+        Unified view initializer for any sub-application tab.
+        Tears down any previously mounted instance (stopping DOM timers and closing
+        IPC pipes) before mounting either a SplashView or a fresh sub-app WebView.
+        """
+        self._unload_tab(tab_id, collect_gc=False)
 
-        if active_card is None:
-            self.chat_app = None
-            self.unread_chat_count = 0
-            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
-            self.stack.add_named(splash, "chat")
-        else:
-            profile_id = active_card.get("profile_dir")
-            username = active_card.get("username")
-            self.unread_chat_count = active_card.get("unread_count", 0)
-            read_fd, write_fd = os.pipe()
-            self.chat_app = PhiloChatApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
-            chat_widget = self.chat_app.get_widget()
-            self.stack.add_named(chat_widget, "chat")
-            watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-            self.ipc_handles["chat"] = (read_fd, watch_id)
+        meta = TAB_METADATA.get(tab_id, {})
+        provider = meta.get("provider", "google")
+        splash_title = "NYTimes" if provider == "nytimes" else "Google"
+        active_card = AccountManager.get_instance().get_active_card(provider)
+
+        is_unavailable = (
+            active_card is None
+            or (provider == "nytimes" and not active_card.get("subscribed", True))
+        )
+
+        if is_unavailable:
+            splash = SplashView(splash_title, on_goto_settings_cb=self._on_settings_tab_clicked)
+            self.stack.add_named(splash, tab_id)
+            return False
+
+        profile_id = active_card.get("profile_dir")
+        username = active_card.get("username")
+        if hasattr(self, f"unread_{tab_id}_count"):
+            setattr(self, f"unread_{tab_id}_count", active_card.get("unread_count", 0))
+
+        read_fd, write_fd = os.pipe()
+        app_cls = self._subapp_classes[tab_id]
+        app_instance = app_cls(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
+        setattr(self, f"{tab_id}_app", app_instance)
+
+        self.stack.add_named(app_instance.get_widget(), tab_id)
+        watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
+        self.ipc_handles[tab_id] = (read_fd, watch_id)
+        return True
+
+    def _init_chat_view(self):
+        return self._init_tab_view("chat")
 
     def _init_msgs_view(self):
-        self._cleanup_ipc_handle("msgs")
-        active_card = AccountManager.get_instance().get_active_card("google")
-        
-        if existing := self.stack.get_child_by_name("msgs"):
-            self.stack.remove(existing)
-
-        if active_card is None:
-            self.msgs_app = None
-            self.unread_msgs_count = 0
-            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
-            self.stack.add_named(splash, "msgs")
-        else:
-            profile_id = active_card.get("profile_dir")
-            username = active_card.get("username")
-            self.unread_msgs_count = active_card.get("unread_count", 0)
-            read_fd, write_fd = os.pipe()
-            self.msgs_app = PhiloMsgsApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
-            msgs_widget = self.msgs_app.get_widget()
-            self.stack.add_named(msgs_widget, "msgs")
-            watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-            self.ipc_handles["msgs"] = (read_fd, watch_id)
+        return self._init_tab_view("msgs")
 
     def _init_wordle_view(self):
-        self._cleanup_ipc_handle("wordle")
-        active_card = AccountManager.get_instance().get_active_card("nytimes")
-        
-        if existing := self.stack.get_child_by_name("wordle"):
-            self.stack.remove(existing)
-
-        if active_card is None or not active_card.get("subscribed", True):
-            self.wordle_app = None
-            splash = SplashView("NYTimes", on_goto_settings_cb=self._on_settings_tab_clicked)
-            self.stack.add_named(splash, "wordle")
-            return False
-        else:
-            profile_id = active_card.get("profile_dir")
-            username = active_card.get("username")
-            read_fd, write_fd = os.pipe()
-            self.wordle_app = PhiloWordleApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
-            wordle_widget = self.wordle_app.get_widget()
-            self.stack.add_named(wordle_widget, "wordle")
-            watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-            self.ipc_handles["wordle"] = (read_fd, watch_id)
-            return True
+        return self._init_tab_view("wordle")
 
     def _init_keep_view(self):
-        self._cleanup_ipc_handle("keep")
-        active_card = AccountManager.get_instance().get_active_card("google")
-        
-        if existing := self.stack.get_child_by_name("keep"):
-            self.stack.remove(existing)
-
-        if active_card is None:
-            self.keep_app = None
-            self.unread_keep_count = 0
-            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
-            self.stack.add_named(splash, "keep")
-        else:
-            profile_id = active_card.get("profile_dir")
-            username = active_card.get("username")
-            self.unread_keep_count = active_card.get("unread_count", 0)
-            read_fd, write_fd = os.pipe()
-            self.keep_app = PhiloKeepApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
-            keep_widget = self.keep_app.get_widget()
-            self.stack.add_named(keep_widget, "keep")
-            watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-            self.ipc_handles["keep"] = (read_fd, watch_id)
+        return self._init_tab_view("keep")
 
     def _init_tasks_view(self):
-        self._cleanup_ipc_handle("tasks")
-        active_card = AccountManager.get_instance().get_active_card("google")
-        
-        if existing := self.stack.get_child_by_name("tasks"):
-            self.stack.remove(existing)
-
-        if active_card is None:
-            self.tasks_app = None
-            self.unread_tasks_count = 0
-            splash = SplashView("Google", on_goto_settings_cb=self._on_settings_tab_clicked)
-            self.stack.add_named(splash, "tasks")
-        else:
-            profile_id = active_card.get("profile_dir")
-            username = active_card.get("username")
-            self.unread_tasks_count = active_card.get("unread_count", 0)
-            read_fd, write_fd = os.pipe()
-            self.tasks_app = PhiloTasksApp(ipc_write_fd=write_fd, profile_id=profile_id, username=username)
-            tasks_widget = self.tasks_app.get_widget()
-            self.stack.add_named(tasks_widget, "tasks")
-            watch_id = GLib.io_add_watch(read_fd, GLib.IO_IN, self._on_ipc_data_received)
-            self.ipc_handles["tasks"] = (read_fd, watch_id)
+        return self._init_tab_view("tasks")
 
     def get_tab_app(self, tab_id: str):
         if tab_id == "settings":
@@ -517,12 +377,13 @@ class PhilotesWindow(Gtk.ApplicationWindow):
                 self.current_tab = enabled[0] if enabled else "settings"
                 self.stack.set_visible_child_name(self.current_tab)
         self._update_tab_ui()
+        self._update_header_title()
 
     def _load_tab(self, tab_id: str):
         if loader := self.tab_loaders.get(tab_id):
             loader()
 
-    def _unload_tab(self, tab_id: str):
+    def _unload_tab(self, tab_id: str, collect_gc: bool = True):
         self._cleanup_ipc_handle(tab_id)
         app = self.get_tab_app(tab_id)
         if app:
@@ -537,11 +398,14 @@ class PhilotesWindow(Gtk.ApplicationWindow):
 
         if hasattr(self, f"unread_{tab_id}_count"):
             setattr(self, f"unread_{tab_id}_count", 0)
+        if hasattr(self, f"{tab_id}_selected_title"):
+            setattr(self, f"{tab_id}_selected_title", None)
         if tab_id == "wordle":
-            self.wordle_completed = None
+            self.wordle_completed = True
 
-        import gc
-        gc.collect()
+        if collect_gc:
+            import gc
+            gc.collect()
 
     def _on_tab_toggled(self, tab_id: str, is_enabled: bool):
         if is_enabled:

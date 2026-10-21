@@ -1,4 +1,4 @@
-# Philotes Implementation Document (v5.3.0)
+# Philotes Implementation Document (v5.3.1)
 
 This document provides a comprehensive overview of the currently implemented architecture, design choices, component structures, and lessons learned during the development of **Philotes**.
 
@@ -159,5 +159,13 @@ Supported sub-applications:
    - *Lesson*: Applying custom CSS positioning, negative margins, and relative z-index overlays in `dark-sharp.css` ensured badge pills render cleanly without clipping.
 
 4. **Linux Task Naming Limits (`prctl`)**:
-   - *Issue*: Linux `prctl(PR_SET_NAME)` truncates process names longer than 15 bytes.
-   - *Lesson*: Using concise sub-application names (`philo-chat`, `philo-msgs`) keeps process names under the 15-character OS threshold for system process monitors.
+   - *Issue*: Linux `prctl(PR_SET_NAME)` truncates process names longer than 15 bytes, and calling `set_process_name()` inside in-process subapp `__init__()` overwrites the parent `philotes` process name.
+   - *Lesson*: Using concise sub-application names (`philo-chat`, `philo-msgs`) and invoking `set_process_name()` strictly in standalone process entrypoints (`main()` and `run_philo_*_subprocess()`) preserves accurate process manager visibility.
+
+5. **WebKitGTK `CSSScrollAnchoring` vs. Google Chat Stream Scroll Restoration**:
+   - *Issue*: In WebKitGTK 2.54+, `CSSScrollAnchoring` is enabled by default, causing `CSS.supports("overflow-anchor", "unset")` to evaluate to `true` in Google Chat (`dynamite.StreamController`), which skips Google Chat's built-in `mutate_processScrollState_` scroll-to-bottom handler while WebKit's `ScrollAnchoringController` anchors the stream above newly sent self-messages.
+   - *Lesson*: Disabling the `CSSScrollAnchoring` feature flag on `WebKit.Settings` in `philo-chat` makes `CSS.supports("overflow-anchor", "unset")` evaluate to `false`, cleanly activating Google Chat's native scroll-to-bottom restoration without custom DOM scripts.
+
+6. **Non-Destructive CSS Ad Hiding in React SSR WebViews (`philo-wordle`)**:
+   - *Issue*: Removing DOM nodes via `MutationObserver` (`el.remove()`) during React 18 hydration and CSS 3D tile-flip animations triggers React hydration bailouts (double-rendering the page) and mid-animation style recalculation flicker.
+   - *Lesson*: Hiding ad containers strictly via `WebKit.UserStyleSheet` (`display: none !important`) without mutating DOM nodes preserves React Virtual DOM integrity and eliminates animation flicker.

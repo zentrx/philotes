@@ -455,7 +455,7 @@ class SettingsView(Gtk.Box):
             ("Version:", f"Philotes {__version__}"),
             ("Toolkit:", "GTK 4.22 & WebKitGTK 6.0"),
             ("Architecture:", "Multi-Process Isolated WebViews"),
-            ("Process Names:", "philo-chat, philo-msgs"),
+            ("Process Names:", "philotes (philo-chat, philo-msgs, philo-tasks, philo-keep, philo-wordle)"),
             ("Config Directory:", "~/.config/philotes"),
         ]
 

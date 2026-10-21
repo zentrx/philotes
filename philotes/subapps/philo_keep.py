@@ -44,7 +44,6 @@ class PhiloKeepApp:
         self.load_initial_url()
 
     def _init_state(self, ipc_write_fd, profile_id, username):
-        set_process_name(self.SUBAPP_NAME)
         self.ipc_write_fd = ipc_write_fd
         self.profile_id = profile_id
         self.username = username
@@ -68,7 +67,6 @@ class PhiloKeepApp:
         )
 
     def _init_webkit_settings(self):
-        init_system_theme_sync()
         self.settings = WebKit.Settings()
         self.settings.set_user_agent(USER_AGENT)
         self.settings.set_enable_javascript(True)
@@ -119,7 +117,8 @@ class PhiloKeepApp:
 
     def reload(self):
         if hasattr(self, "web_view") and self.web_view:
-            self.load_initial_url()
+            print(f"{self.SUBAPP_NAME}: reloading {self.DEFAULT_URL}", flush=True)
+            self.web_view.load_uri(self.DEFAULT_URL)
 
     def cleanup(self):
         if getattr(self, "poll_timer_id", None):
